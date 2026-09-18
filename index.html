@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Конкурс видеоотзывов ПРАВЭКС — Расскажите тем, кто ещё боится</title>
+  <meta name="description" content="Снимите короткое видео о своём опыте и получите подарок. Приём заявок до 2 ноября." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Видно только пока CONFIG.submitEndpoint не настроен в config.js -->
+  <div class="demo-banner" id="demoBanner" hidden>
+    Демо-режим: форма пока не подключена к серверу (см. <code>submitEndpoint</code> в <code>config.js</code>). Заявки не отправляются на почту.
+  </div>
+
+  <header class="site-header">
+    <a class="logo" id="logoLink" href="#" target="_blank" rel="noopener">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="14" cy="14" r="13" stroke="#460A67" stroke-width="2"/>
+        <path d="M9 14.5L12.5 18L19 10" stroke="#460A67" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      ПРАВЭКС
+    </a>
+    <a class="header-phone" id="headerPhone" href="tel:88003330288">8-800-333-02-88</a>
+  </header>
+
+  <main>
+
+    <!-- ===== СТАРТОВЫЙ ЭКРАН ===== -->
+    <section class="hero" id="heroSection">
+      <div class="hero-arc" aria-hidden="true"></div>
+      <div class="container hero-grid">
+        <div class="hero-text">
+          <h1 class="hero-title" id="heroTitle">Расскажите тем, кто ещё боится</h1>
+          <p class="hero-subtitle" id="heroSubtitle">Вы уже прошли путь, который для кого-то сейчас только начинается.</p>
+
+          <div class="hero-badges" id="heroBadges"></div>
+
+          <div class="hero-actions">
+            <button class="btn btn-primary" id="startBtn">Участвовать</button>
+            <button class="btn btn-text" id="rulesLinkBtn" type="button">Правила конкурса</button>
+          </div>
+
+          <p class="ad-disclaimer" id="adDisclaimer"></p>
+        </div>
+
+        <div class="hero-media">
+          <img id="heroImage" src="" alt="" hidden />
+          <svg class="placeholder-icon" id="heroPlaceholder" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="8.5" cy="9.5" r="1.5" fill="currentColor"/>
+            <path d="M3 16l4.5-4.5a1.5 1.5 0 0 1 2.12 0L14 16M13 15l1.88-1.88a1.5 1.5 0 0 1 2.12 0L21 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- Приём завершён — показывается вместо hero после дедлайна -->
+    <section class="hero" id="closedSection" hidden>
+      <div class="container state-screen">
+        <svg class="state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h2 id="closedTitle">Приём завершён</h2>
+        <p id="closedText"></p>
+      </div>
+    </section>
+
+    <!-- ===== БЛОК "КАК УЧАСТВОВАТЬ" ===== -->
+    <section class="section" id="howSection">
+      <div class="container">
+        <h2 class="section-title">Как участвовать</h2>
+        <div class="steps-grid" id="howGrid"></div>
+
+        <h2 class="section-title">Частые вопросы</h2>
+        <div id="faqList"></div>
+
+        <div style="text-align:center; margin-top:32px;">
+          <button class="btn btn-primary" id="startBtn2">Участвовать</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== КВИЗ ===== -->
+    <section class="quiz-section" id="quizSection" hidden>
+      <div class="container">
+        <div class="quiz-shell">
+
+          <div class="progress-wrap" id="progressWrap">
+            <div class="progress-label" id="progressLabel">Шаг 1 из 6</div>
+            <div class="progress-bar"><div class="progress-bar-fill" id="progressFill" style="width:16%"></div></div>
+          </div>
+
+          <!-- Шаг 1 -->
+          <div class="quiz-step" data-step="1">
+            <h2 class="quiz-question" id="q1Question"></h2>
+            <div class="option-grid" id="q1Options"></div>
+            <div class="quiz-nav">
+              <span class="spacer"></span>
+              <button class="btn btn-primary" id="q1NextBtn" disabled>Далее</button>
+            </div>
+          </div>
+
+          <!-- Экран "не клиент" -->
+          <div class="quiz-step state-screen" data-step="not-client" hidden>
+            <svg class="state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <h2 id="notClientTitle"></h2>
+            <p id="notClientText"></p>
+            <a class="btn btn-primary" id="notClientPhone" href="tel:88003330288">8-800-333-02-88</a>
+          </div>
+
+          <!-- Шаг 2 -->
+          <div class="quiz-step" data-step="2" hidden>
+            <h2 class="quiz-question" id="q2Question"></h2>
+            <div class="option-grid cols-2" id="q2Options"></div>
+            <div class="quiz-nav">
+              <button class="btn btn-secondary" data-nav="back">Назад</button>
+              <span class="spacer"></span>
+              <button class="btn btn-primary" id="q2NextBtn" disabled>Далее</button>
+            </div>
+          </div>
+
+          <!-- Шаг 3 -->
+          <div class="quiz-step" data-step="3" hidden>
+            <h2 class="quiz-question" id="q3Question"></h2>
+            <p class="quiz-note" id="q3Note"></p>
+            <div class="option-grid" id="q3Options"></div>
+            <div class="quiz-nav">
+              <button class="btn btn-secondary" data-nav="back">Назад</button>
+              <span class="spacer"></span>
+              <button class="btn btn-primary" id="q3NextBtn" disabled>Далее</button>
+            </div>
+          </div>
+
+          <!-- Шаг 4 -->
+          <div class="quiz-step" data-step="4" hidden>
+            <h2 class="quiz-question" id="q4Title"></h2>
+            <ul class="rules-list" id="filmingRulesList"></ul>
+            <div class="hints-box">
+              <h4>Возможные вопросы-подсказки</h4>
+              <ul id="hintsList"></ul>
+            </div>
+            <div class="dont-box">
+              <h4>Чего не должно быть в ролике</h4>
+              <ul id="dontList"></ul>
+            </div>
+            <div class="quiz-nav">
+              <button class="btn btn-secondary" data-nav="back">Назад</button>
+              <span class="spacer"></span>
+              <button class="btn btn-secondary" id="filmLaterBtn">Сниму позже</button>
+              <button class="btn btn-primary" id="videoReadyBtn">Видео готово</button>
+            </div>
+          </div>
+
+          <!-- Экран "сниму позже" -->
+          <div class="quiz-step state-screen" data-step="later" hidden>
+            <svg class="state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+            <h2 id="laterTitle"></h2>
+            <p id="laterText"></p>
+            <button class="btn btn-secondary" data-nav="restart">На главную</button>
+          </div>
+
+          <!-- Шаг 5 -->
+          <div class="quiz-step" data-step="5" hidden>
+            <h2 class="quiz-question" id="q5Question"></h2>
+            <p class="quiz-note" id="uploadHint"></p>
+
+            <div class="dropzone" id="dropzone">
+              <input type="file" id="fileInput" accept="video/mp4,video/quicktime" class="sr-only" />
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 16V4m0 0L7 9m5-5l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <div class="dz-title">Перетащите файл или нажмите «Выбрать видео»</div>
+              <div class="dz-hint" id="dzHint"></div>
+            </div>
+
+            <div class="upload-progress" id="uploadProgress" hidden>
+              <div class="upload-progress-bar"><div class="upload-progress-fill" id="uploadProgressFill"></div></div>
+              <div class="upload-progress-text" id="uploadProgressText">Загрузка… 0%</div>
+            </div>
+
+            <div class="file-preview" id="filePreview" hidden>
+              <video id="previewVideo" muted></video>
+              <div class="file-preview-info">
+                <div class="fname" id="fileNameText"></div>
+                <div class="fmeta" id="fileMetaText"></div>
+              </div>
+              <button class="btn btn-secondary" id="replaceFileBtn" type="button">Заменить</button>
+            </div>
+
+            <div class="field-error" id="uploadError" hidden></div>
+            <div class="field-warning" id="uploadWarning" hidden></div>
+
+            <div class="quiz-nav">
+              <button class="btn btn-secondary" data-nav="back">Назад</button>
+              <span class="spacer"></span>
+              <button class="btn btn-primary" id="toStep6Btn" disabled>Далее</button>
+            </div>
+          </div>
+
+          <!-- Шаг 6 -->
+          <div class="quiz-step" data-step="6" hidden>
+            <h2 class="quiz-question" id="q6Title"></h2>
+
+            <div class="form-field">
+              <label for="fName">ФИО</label>
+              <input type="text" id="fName" autocomplete="name" />
+            </div>
+            <div class="form-field">
+              <label for="fPhone">Телефон (тот, что указан в договоре)</label>
+              <input type="tel" id="fPhone" autocomplete="tel" placeholder="+7 9XX XXX-XX-XX" />
+            </div>
+            <div class="form-field">
+              <label for="fEmail">E-mail (необязательно)</label>
+              <input type="email" id="fEmail" autocomplete="email" />
+            </div>
+            <div class="form-field">
+              <label for="fCity">Город</label>
+              <input type="text" id="fCity" autocomplete="address-level2" />
+            </div>
+            <div class="form-field">
+              <label>Удобный канал связи</label>
+              <div class="channel-grid" id="channelGrid"></div>
+            </div>
+
+            <div id="consentsWrap"></div>
+
+            <!-- Honeypot от ботов, реальные пользователи это поле не видят и не заполняют -->
+            <div class="hp-field" aria-hidden="true">
+              <label for="hp_website">Оставьте это поле пустым</label>
+              <input type="text" id="hp_website" name="hp_website" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <div class="field-error" id="formError" hidden></div>
+
+            <div class="quiz-nav">
+              <button class="btn btn-secondary" data-nav="back">Назад</button>
+              <span class="spacer"></span>
+              <button class="btn btn-primary" id="submitBtn">Отправить</button>
+            </div>
+          </div>
+
+          <!-- Финальный экран -->
+          <div class="quiz-step state-screen" data-step="final" hidden>
+            <svg class="state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8 12.5l2.5 2.5L16 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h2 id="finalTitle"></h2>
+            <p id="finalText"></p>
+            <div class="application-number" id="applicationNumber"></div>
+            <div>
+              <button class="btn btn-primary" id="shareBtn">Поделиться конкурсом</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Модальное окно правил / полных текстов согласий -->
+  <div class="modal-overlay" id="modalOverlay" hidden>
+    <div class="modal-box">
+      <button class="modal-close" id="modalClose" aria-label="Закрыть">✕</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div id="footerOrganizer"></div>
+          <div id="footerRequisites"></div>
+        </div>
+        <div class="footer-links">
+          <a id="footerPhone" href="tel:88003330288">8-800-333-02-88</a>
+          <a id="footerRules" href="#rules">Правила конкурса</a>
+          <a id="footerPrivacy" href="#privacy">Политика обработки ПДн</a>
+        </div>
+      </div>
+      <div>© 2026 ПРАВЭКС. Все права защищены.</div>
+    </div>
+  </footer>
+
+  <div class="cookie-banner" id="cookieBanner" hidden>
+    <p>Мы используем куки для аналитики. Продолжая пользоваться сайтом, вы соглашаетесь с <a href="#privacy" id="cookiePrivacyLink">политикой обработки данных</a>.</p>
+    <button class="btn btn-primary" id="cookieAcceptBtn">Понятно</button>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
