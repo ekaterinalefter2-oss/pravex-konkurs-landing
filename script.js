@@ -17,6 +17,8 @@
     topic: null,
     format: null,
     videoMeta: null, // {name, size, duration, width, height} — сам файл не сохраняется в localStorage
+    videoViewUrl: "", // защищённая ссылка на файл в VK Object Storage — уходит в письмо на почту (живёт 6 дней)
+    videoObjectKey: "", // путь к файлу в бакете — чтобы найти видео и после истечения ссылки
     caseNumber: "",
     debtAmount: "",
     contacts: { name: "", phone: "", email: "", city: "", channel: null },
@@ -34,6 +36,7 @@
 
   let state = loadState();
   let videoFile = null; // File — живёт только в памяти вкладки
+  let currentUploadXhr = null; // текущая загрузка на сервер, чтобы можно было её оборвать
   let isDuplicateSubmission = false;
 
   function loadState() {
@@ -590,8 +593,14 @@
   });
 
   function resetUpload() {
+    if (currentUploadXhr) {
+      currentUploadXhr.abort();
+      currentUploadXhr = null;
+    }
     videoFile = null;
     state.videoMeta = null;
+    state.videoViewUrl = "";
+    state.videoObjectKey = "";
     saveState();
     $("filePreview").hidden = true;
     $("uploadProgress").hidden = true;
@@ -653,7 +662,7 @@
         $("uploadWarning").textContent = "Видео горизонтальное. По правилам нужно вертикальное, можно заменить";
       }
 
-      simulateUpload(() => {
+      uploadToStorage(file, () => {
         $("previewVideo").src = objectUrl;
         $("fileNameText").textContent = file.name;
         $("fileMetaText").textContent = `${formatDuration(duration)} · ${formatBytes(file.size)}`;
@@ -669,32 +678,78 @@
     };
   }
 
-  function simulateUpload(onDone) {
-    // Здесь эмулируется прогресс отправки файла в хранилище.
-    // В боевой версии вместо этого — реальный fetch/XHR с прогрессом
-    // на CONFIG.submitEndpoint (или на прямой upload-URL хранилища).
+  // Реальная загрузка файла напрямую в VK Object Storage:
+  // 1) просим сервер (/api/get-upload-url) выдать одноразовую защищённую ссылку;
+  // 2) заливаем файл по этой ссылке напрямую в бакет, с прогрессом;
+  // 3) сохраняем защищённую ссылку на просмотр — она уйдёт в письмо на почту.
+  function uploadToStorage(file, onDone) {
     const progressWrap = $("uploadProgress");
     const fill = $("uploadProgressFill");
     const text = $("uploadProgressText");
     progressWrap.hidden = false;
     fill.style.width = "0%";
-    let pct = 0;
-    const timer = setInterval(() => {
-      pct = Math.min(100, pct + Math.random() * 25 + 10);
-      fill.style.width = pct + "%";
-      text.textContent = `Загрузка… ${Math.round(pct)}%`;
-      if (pct >= 100) {
-        clearInterval(timer);
+    text.textContent = "Подготовка загрузки…";
+
+    const contentType = file.type || "video/mp4";
+
+    fetch("/api/get-upload-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: file.name, contentType })
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("presign_failed");
+        return res.json();
+      })
+      .then(({ uploadUrl, viewUrl, objectKey }) => {
+        const xhr = new XMLHttpRequest();
+        currentUploadXhr = xhr;
+        xhr.open("PUT", uploadUrl);
+        xhr.setRequestHeader("Content-Type", contentType);
+
+        xhr.upload.onprogress = (e) => {
+          if (!e.lengthComputable) return;
+          const pct = Math.round((e.loaded / e.total) * 100);
+          fill.style.width = pct + "%";
+          text.textContent = `Загрузка… ${pct}%`;
+        };
+
+        xhr.onload = () => {
+          currentUploadXhr = null;
+          progressWrap.hidden = true;
+          if (xhr.status >= 200 && xhr.status < 300) {
+            state.videoViewUrl = viewUrl;
+            state.videoObjectKey = objectKey;
+            saveState();
+            onDone();
+          } else {
+            showUploadError("Не получилось загрузить видео на сервер. Нажмите «Заменить» и попробуйте ещё раз");
+          }
+        };
+
+        xhr.onerror = () => {
+          currentUploadXhr = null;
+          progressWrap.hidden = true;
+          showUploadError("Загрузка прервалась. Проверьте интернет, нажмите «Заменить» и попробуйте снова");
+        };
+
+        xhr.send(file);
+      })
+      .catch(() => {
+        currentUploadXhr = null;
         progressWrap.hidden = true;
-        onDone();
-      }
-    }, 250);
+        showUploadError("Не получилось начать загрузку. Проверьте интернет и попробуйте ещё раз");
+      });
   }
 
-  // Обрыв связи — демонстрация обработки ошибки при потере сети во время "загрузки"
+  // Обрыв связи во время загрузки — прерываем запрос и сообщаем об этом
   window.addEventListener("offline", () => {
+    if (currentUploadXhr) {
+      currentUploadXhr.abort();
+      currentUploadXhr = null;
+    }
     if (!$("uploadProgress").hidden) {
-      showUploadError('Загрузка прервалась. Проверьте интернет и нажмите «Повторить»');
+      showUploadError('Загрузка прервалась. Проверьте интернет и нажмите «Заменить», чтобы попробовать снова');
       $("uploadProgress").hidden = true;
     }
   });
@@ -726,6 +781,7 @@
     const errors = [];
     if (!state.contacts.phone.trim()) errors.push("Укажите телефон");
     if (!state.contacts.channel) errors.push("Выберите удобный канал связи");
+    if (!state.videoViewUrl) errors.push("Видео не загрузилось на сервер — вернитесь на шаг загрузки и попробуйте ещё раз");
 
     // На случай, если шаг "Согласия" был пропущен (например, при восстановлении черновика)
     errors.push(...validateConsents());
@@ -813,7 +869,9 @@
       "Формат публикации": formatLabel,
       "Номер дела": state.caseNumber,
       "Сумма долга": state.format === "open" ? (state.debtAmount || "не указана") : "не указывается (формат «Полуоткрыто»)",
-      "Видео, выбранное на сайте": videoLocalInfo + " — файл нужно запросить у участника отдельно, сайт его пока не загружает",
+      "Ссылка на видео (активна 6 дней)": state.videoViewUrl || "— (загрузка не завершилась, файл нужно запросить у участника отдельно)",
+      "Путь к файлу в хранилище": state.videoObjectKey || "—",
+      "Видео, выбранное на сайте": videoLocalInfo,
       ["Согласия (версия " + CONFIG.consents.version + ")"]: consentsSummary,
       "UTM-метки": Object.keys(state.utm || {}).length ? JSON.stringify(state.utm) : "—",
       "Повторная отправка": isDuplicateSubmission ? "да" : "нет"
