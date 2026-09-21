@@ -341,7 +341,7 @@
   function prefillDistributionFromFormat(formatId) {
     const d = state.consents.distribution;
     if (formatId === "open") {
-      d.face = true; d.name = true; d.city = true; d.case_number = true; d.debt_amount = false;
+      d.face = true; d.name = true; d.city = true; d.case_number = true; d.debt_amount = true;
     } else if (formatId === "name_only") {
       d.face = true; d.name = true; d.city = false; d.case_number = true; d.debt_amount = false;
     }
@@ -362,24 +362,6 @@
 
     // Согласие 3 — изображение
     wrap.appendChild(buildConsentRow("consent_image", c.image, state.consents.image, (val) => { state.consents.image = val; saveState(); }, () => openRulesModal("Согласие на использование изображения", "Здесь размещается полный текст согласия на обнародование и использование изображения (ст. 152.1 ГК РФ, п. 10.1.3 правил).")));
-
-    // Блок 4 — что можно показать
-    const block = el("div", { className: "consent-block" });
-    block.appendChild(el("h4", { text: c.distributionTitle }));
-    c.distributionItems.forEach((item) => {
-      const row = el("div", { className: "consent-row" });
-      const cb = el("input", { attrs: { type: "checkbox", id: "dist_" + item.id } });
-      cb.checked = !!state.consents.distribution[item.id];
-      cb.addEventListener("change", (e) => {
-        state.consents.distribution[item.id] = e.target.checked;
-        saveState();
-      });
-      const label = el("label", { text: item.label, attrs: { for: "dist_" + item.id } });
-      row.appendChild(cb);
-      row.appendChild(label);
-      block.appendChild(row);
-    });
-    wrap.appendChild(block);
   }
 
   function buildConsentRow(id, labelText, checked, onChange, onOpenFull) {
@@ -647,8 +629,6 @@
     if (!state.consents.pdn) errors.push("Нужно согласие на обработку персональных данных");
 
     if (!state.consents.image) errors.push("Нужно согласие на использование изображения");
-    const anyDist = Object.values(state.consents.distribution).some(Boolean);
-    if (!anyDist) errors.push("Отметьте хотя бы один пункт в блоке «Что можно показать в публикации»");
 
     // Honeypot: если заполнено — вероятно, бот
     if ($("hp_website").value.trim() !== "") {
