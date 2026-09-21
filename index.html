@@ -191,6 +191,22 @@
             <button class="btn btn-secondary" data-nav="restart">На главную</button>
           </div>
 
+          <!-- Шаг "Согласия" — отдельным слайдом перед загрузкой видео -->
+          <div class="quiz-step" data-step="consents" hidden>
+            <h2 class="quiz-question" id="consentsTitle"></h2>
+            <p class="quiz-note" id="consentsNote"></p>
+
+            <div id="consentsWrap"></div>
+
+            <div class="field-error" id="consentsError" hidden></div>
+
+            <div class="quiz-nav">
+              <button class="btn btn-secondary" data-nav="back">Назад</button>
+              <span class="spacer"></span>
+              <button class="btn btn-primary" id="consentsNextBtn">Далее</button>
+            </div>
+          </div>
+
           <!-- Шаг 5 -->
           <div class="quiz-step" data-step="5" hidden>
             <h2 class="quiz-question" id="q5Question"></h2>
@@ -223,13 +239,6 @@
             <div class="field-error" id="uploadError" hidden></div>
             <div class="field-warning" id="uploadWarning" hidden></div>
 
-            <div class="form-field" id="videoLinkField">
-              <label for="fVideoLink" id="videoLinkLabel"></label>
-              <input type="url" id="fVideoLink" placeholder="https://..." />
-            </div>
-
-            <div class="field-error" id="videoLinkError" hidden></div>
-
             <div class="quiz-nav">
               <button class="btn btn-secondary" data-nav="back">Назад</button>
               <span class="spacer"></span>
@@ -253,8 +262,6 @@
               <label>Удобный канал связи</label>
               <div class="channel-grid" id="channelGrid"></div>
             </div>
-
-            <div id="consentsWrap"></div>
 
             <!-- Honeypot от ботов, реальные пользователи это поле не видят и не заполняют -->
             <div class="hp-field" aria-hidden="true">

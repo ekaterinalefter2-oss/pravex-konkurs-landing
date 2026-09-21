@@ -17,7 +17,6 @@
     topic: null,
     format: null,
     videoMeta: null, // {name, size, duration, width, height} — сам файл не сохраняется в localStorage
-    videoLink: "", // ссылка на загруженное видео (Google Диск и т.п.) — уходит в письмо на почту
     caseNumber: "",
     debtAmount: "",
     contacts: { name: "", phone: "", email: "", city: "", channel: null },
@@ -262,6 +261,10 @@
     $("uploadHint").textContent = "";
     $("dzHint").textContent = CONFIG.uploadHint;
 
+    // Шаг "Согласия"
+    $("consentsTitle").textContent = CONFIG.consentsTitle;
+    $("consentsNote").textContent = CONFIG.consentsNote;
+
     // Шаг 6
     $("q6Title").textContent = CONFIG.step6Title;
     const channelGrid = $("channelGrid");
@@ -305,11 +308,6 @@
     $("pCity").addEventListener("input", (e) => { state.contacts.city = e.target.value; saveState(); });
     $("pDebt").addEventListener("input", (e) => { state.debtAmount = e.target.value; saveState(); });
     updatePubNote();
-
-    // Ссылка на видео (шаг 5)
-    $("videoLinkLabel").textContent = CONFIG.videoLinkLabel;
-    $("fVideoLink").value = state.videoLink || "";
-    $("fVideoLink").addEventListener("input", (e) => { state.videoLink = e.target.value; saveState(); });
   }
 
   function updatePubNote() {
@@ -448,7 +446,7 @@
   // ---------------------------------------------------------------------
   // Навигация по шагам
   // ---------------------------------------------------------------------
-  const STEP_ORDER = ["1", "2", "3", "pub", "4", "5", "6"];
+  const STEP_ORDER = ["1", "2", "3", "pub", "4", "consents", "5", "6"];
   let currentStep = "1";
 
   function showQuizStep(stepKey) {
@@ -541,7 +539,20 @@
     (topic ? topic.hints : []).forEach((h) => hintsList.appendChild(el("li", { text: h })));
   }
 
-  $("videoReadyBtn").addEventListener("click", () => showQuizStep("5"));
+  $("videoReadyBtn").addEventListener("click", () => showQuizStep("consents"));
+
+  $("consentsNextBtn").addEventListener("click", () => {
+    const errors = validateConsents();
+    const errEl = $("consentsError");
+    if (errors.length) {
+      errEl.textContent = errors.join(" · ");
+      errEl.hidden = false;
+      return;
+    }
+    errEl.hidden = true;
+    saveState();
+    showQuizStep("5");
+  });
 
   $("filmLaterBtn").addEventListener("click", () => {
     showQuizStep("later");
@@ -550,13 +561,6 @@
 
   $("toStep6Btn").addEventListener("click", () => {
     if (!videoFile) return;
-    const linkErrEl = $("videoLinkError");
-    if (!state.videoLink.trim()) {
-      linkErrEl.textContent = "Вставьте ссылку на загруженное видео — без неё заявка не дойдёт до организатора";
-      linkErrEl.hidden = false;
-      return;
-    }
-    linkErrEl.hidden = true;
     showQuizStep("6");
   });
 
@@ -706,19 +710,25 @@
     return "К-" + String(counter).padStart(4, "0");
   }
 
-  function validateStep6() {
+  // Проверка отдельного шага "Согласия" (перед загрузкой видео)
+  function validateConsents() {
     const errors = [];
-    if (!state.contacts.name.trim()) errors.push("Укажите ФИО");
-    if (!state.contacts.phone.trim()) errors.push("Укажите телефон");
-    if (!state.contacts.city.trim()) errors.push("Укажите город");
-    if (!state.contacts.channel) errors.push("Выберите удобный канал связи");
     if (!state.consents.rules) errors.push("Нужно согласие с правилами конкурса");
     if (!state.consents.pdn) errors.push("Нужно согласие на обработку персональных данных");
-
     if (!state.consents.pdnDistribution) errors.push("Нужно согласие на обработку персональных данных, разрешённых для распространения");
     if (!state.format) errors.push("Выберите формат публикации: «Открытый» или «Полуоткрытый»");
     if (!state.consents.image) errors.push("Нужно согласие на использование изображения");
     if (!state.consents.license) errors.push("Нужно согласие на использование видео, голоса и текста отзыва");
+    return errors;
+  }
+
+  function validateStep6() {
+    const errors = [];
+    if (!state.contacts.phone.trim()) errors.push("Укажите телефон");
+    if (!state.contacts.channel) errors.push("Выберите удобный канал связи");
+
+    // На случай, если шаг "Согласия" был пропущен (например, при восстановлении черновика)
+    errors.push(...validateConsents());
 
     // Honeypot: если заполнено — вероятно, бот
     if ($("hp_website").value.trim() !== "") {
@@ -803,8 +813,7 @@
       "Формат публикации": formatLabel,
       "Номер дела": state.caseNumber,
       "Сумма долга": state.format === "open" ? (state.debtAmount || "не указана") : "не указывается (формат «Полуоткрыто»)",
-      "Ссылка на видео": state.videoLink || "—",
-      "Видео, выбранное на сайте": videoLocalInfo,
+      "Видео, выбранное на сайте": videoLocalInfo + " — файл нужно запросить у участника отдельно, сайт его пока не загружает",
       ["Согласия (версия " + CONFIG.consents.version + ")"]: consentsSummary,
       "UTM-метки": Object.keys(state.utm || {}).length ? JSON.stringify(state.utm) : "—",
       "Повторная отправка": isDuplicateSubmission ? "да" : "нет"
