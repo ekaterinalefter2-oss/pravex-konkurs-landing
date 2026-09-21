@@ -15,7 +15,6 @@
   const defaultState = {
     step1: null,
     topic: null,
-    format: null,
     videoMeta: null, // {name, size, duration, width, height} — сам файл не сохраняется в localStorage
     videoViewUrl: "", // защищённая ссылка на файл в VK Object Storage — уходит в письмо на почту (живёт 6 дней)
     videoObjectKey: "", // путь к файлу в бакете — чтобы найти видео и после истечения ссылки
@@ -25,8 +24,7 @@
       pdn: false,
       pdnDistribution: false,
       image: false,
-      license: false,
-      distribution: { face: false, name: false, city: false }
+      license: false
     },
     utm: {},
     applicationNumber: null
@@ -413,17 +411,6 @@
     });
   }
 
-  function prefillDistributionFromFormat(formatId) {
-    const d = state.consents.distribution;
-    if (formatId === "open") {
-      d.face = true; d.name = true; d.city = false;
-    } else if (formatId === "name_only") {
-      d.face = false; d.name = true; d.city = false;
-    }
-    saveState();
-    renderConsentsBlock();
-  }
-
   function renderConsentsBlock() {
     const wrap = $("consentsWrap");
     wrap.innerHTML = "";
@@ -444,23 +431,7 @@
     consent("pdn", c.pdn, "Согласие на обработку персональных данных", "Здесь размещается полный текст согласия на обработку персональных данных (152-ФЗ, п. 10.1.1 правил).");
 
     // 2 — ПДн, разрешённые для распространения, с выбором формата
-    consent("pdnDistribution", c.pdnDistribution, "Согласие на обработку персональных данных, разрешённых для распространения", "Здесь размещается полный текст отдельного согласия на обработку персональных данных, разрешённых субъектом для распространения (ст. 10.1 152-ФЗ), с указанием выбранного формата: «Открытый» или «Полуоткрытый».");
-    const formatBox = el("div", { className: "consent-formats" });
-    CONFIG.formats.forEach((f) => {
-      const label = el("label", { className: "consent-format" });
-      const radio = el("input", { attrs: { type: "radio", name: "consent_format", value: f.id } });
-      radio.checked = state.format === f.id;
-      radio.addEventListener("change", () => {
-        state.format = f.id;
-        prefillDistributionFromFormat(f.id);
-      });
-      label.appendChild(radio);
-      label.appendChild(document.createTextNode(" " + f.consentLabel + " — " + f.desc));
-      formatBox.appendChild(label);
-    });
-    wrap.appendChild(formatBox);
-    wrap.appendChild(el("p", { className: "consent-format-note", text: CONFIG.formatNote }));
-
+    consent("pdnDistribution", c.pdnDistribution, "Согласие на обработку персональных данных, разрешённых для распространения", "Здесь размещается полный текст отдельного согласия на обработку персональных данных, разрешённых субъектом для распространения (ст. 10.1 152-ФЗ).");
     // 3 — использование изображения
     consent("image", c.image, "Согласие на использование изображения", "Здесь размещается полный текст согласия на обнародование и использование изображения (ст. 152.1 ГК РФ, п. 10.1.3 правил).");
 
@@ -799,7 +770,6 @@
     if (!state.consents.rules) errors.push("Нужно согласие с правилами конкурса");
     if (!state.consents.pdn) errors.push("Нужно согласие на обработку персональных данных");
     if (!state.consents.pdnDistribution) errors.push("Нужно согласие на обработку персональных данных, разрешённых для распространения");
-    if (!state.format) errors.push("Выберите формат публикации: «Открытый» или «Полуоткрытый»");
     if (!state.consents.image) errors.push("Нужно согласие на использование изображения");
     if (!state.consents.license) errors.push("Нужно согласие на использование видео, голоса и текста отзыва");
     return errors;
@@ -872,10 +842,7 @@
   function buildEmailFields(appNumber) {
     const stazhLabel = (CONFIG.step1Options.find((o) => o.id === state.step1) || {}).label || "—";
     const topicLabel = (CONFIG.topics.find((t) => t.id === state.topic) || {}).label || state.topic || "—";
-    const formatObj = CONFIG.formats.find((f) => f.id === state.format) || {};
-    const formatLabel = formatObj.consentLabel ? formatObj.consentLabel + " — " + formatObj.desc : (state.format || "—");
     const consentsSummary = Object.entries(state.consents)
-      .filter(([key]) => key !== "distribution")
       .map(([key, val]) => key + ": " + (val ? "да" : "нет"))
       .join("; ");
     const videoLocalInfo = state.videoMeta
@@ -896,7 +863,6 @@
       "Удобный канал связи": state.contacts.channel || "—",
       "Стаж партнёрства": stazhLabel,
       "Тема истории": topicLabel,
-      "Формат публикации": formatLabel,
       "Ссылка на видео (активна 6 дней)": state.videoViewUrl || "— (загрузка не завершилась, файл нужно запросить у участника отдельно)",
       "Путь к файлу в хранилище": state.videoObjectKey || "—",
       "Видео, выбранное на сайте": videoLocalInfo,
