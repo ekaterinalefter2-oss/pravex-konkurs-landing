@@ -146,6 +146,8 @@
       .replace("{rulesLink}", CONFIG.rulesUrl);
     $("adDisclaimer").textContent = disclaimer.replace(/\.\.(?!\.)/g, "."); // "г.." после даты → "г."
 
+    initHeroSlider();
+
     // Номинации — карточки из тем шага 2
     $("nominationsTitle").textContent = CONFIG.nominationsTitle;
     $("nominationsLead").textContent = CONFIG.nominationsLead;
@@ -318,6 +320,68 @@
     $("pFio").addEventListener("input", (e) => { state.contacts.name = e.target.value; saveState(); });
     $("pCity").addEventListener("input", (e) => { state.contacts.city = e.target.value; saveState(); });
     updatePubNote();
+  }
+
+  // Слайдер фото в баннере: автопрокрутка, точки, свайп; на паузе при наведении/фокусе
+  function initHeroSlider() {
+    const slides = CONFIG.heroSlides || [];
+    const slidesWrap = $("heroSlides");
+    const dotsWrap = $("heroDots");
+    if (!slides.length) { $("heroSlider").hidden = true; return; }
+
+    const imgs = slides.map((slide, i) => {
+      const img = el("img", { className: "hero-slide", attrs: { src: slide.src, alt: slide.alt || "", width: "1200", height: "900", decoding: "async" } });
+      if (i > 0) img.loading = "lazy";
+      slidesWrap.appendChild(img);
+      return img;
+    });
+    const dots = slides.map((slide, i) => {
+      const dot = el("button", { className: "hero-dot", attrs: { type: "button", "aria-label": "Фото " + (i + 1) + " из " + slides.length } });
+      dot.addEventListener("click", () => { show(i); restart(); });
+      dotsWrap.appendChild(dot);
+      return dot;
+    });
+    dotsWrap.hidden = slides.length < 2;
+
+    let current = 0;
+    let timer = null;
+
+    function show(index) {
+      current = (index + slides.length) % slides.length;
+      imgs.forEach((img, i) => {
+        img.classList.toggle("is-active", i === current);
+        img.setAttribute("aria-hidden", i === current ? "false" : "true");
+      });
+      dots.forEach((dot, i) => dot.classList.toggle("is-active", i === current));
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+    function start() {
+      if (slides.length < 2 || timer) return;
+      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      timer = setInterval(() => show(current + 1), CONFIG.heroSlideIntervalMs || 4500);
+    }
+    function restart() { stop(); start(); }
+
+    const box = $("heroSlider");
+    box.addEventListener("mouseenter", stop);
+    box.addEventListener("mouseleave", start);
+    box.addEventListener("focusin", stop);
+    box.addEventListener("focusout", start);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) stop(); else start(); });
+
+    let touchX = null;
+    box.addEventListener("touchstart", (e) => { touchX = e.touches[0].clientX; stop(); }, { passive: true });
+    box.addEventListener("touchend", (e) => {
+      if (touchX !== null) {
+        const dx = e.changedTouches[0].clientX - touchX;
+        if (Math.abs(dx) > 40) show(current + (dx < 0 ? 1 : -1));
+      }
+      touchX = null;
+      start();
+    });
+
+    show(0);
+    start();
   }
 
   function updatePubNote() {
