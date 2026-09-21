@@ -16,6 +16,7 @@ const CONFIG = {
   organizerRequisites: "Адрес: 426068, Удмуртская Республика, г. Ижевск, улица имени Сабурова А.Н., д. 17, кв. 561\nИНН: 745110599126\nОГРНИП: 322200000003421", // для подвала
   rulesUrl: "https://drive.google.com/drive/folders/1al7atSr5OqY8Ts7i9uafpWhSTJj80H7m?usp=sharing",                               // ссылка на полные правила конкурса
   privacyUrl: "#privacy",                             // ссылка на политику обработки ПДн
+  headerBadge: "Конкурс",                              // лиловая плашка справа от логотипа в шапке
   siteUrl: "https://pravex.ru",                       // куда ведёт клик по логотипу
 
   // ===== СРОКИ КОНКУРСА =====

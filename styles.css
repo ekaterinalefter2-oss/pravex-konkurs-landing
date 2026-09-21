@@ -101,6 +101,7 @@ a { color: var(--color-secondary); }
 /* ---------- Шапка ---------- */
 .site-header {
   gap: 12px;
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -119,15 +120,47 @@ a { color: var(--color-secondary); }
   text-decoration: none;
 }
 
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Лиловая плашка «Конкурс» рядом с логотипом */
+.header-badge {
+  background: #E9DDF6;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .02em;
+  padding: 7px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
 .logo-img { height: 28px; width: auto; }
 
-@media (max-width: 380px) {
+/* Телефоны: логотип + плашка + номер должны помещаться в одну строку */
+@media (max-width: 470px) {
+  .site-header { padding: 16px; gap: 8px; }
   .logo-img { height: 22px; }
-  .header-phone { font-size: 13px; }
+  .header-brand { gap: 8px; }
+  .header-badge { font-size: 12px; padding: 5px 9px; }
+  .header-phone { font-size: 13px; margin-left: auto; }
+}
+
+@media (max-width: 380px) {
+  .logo-img { height: 20px; }
+  .header-brand { gap: 6px; }
+  .header-badge { font-size: 11px; padding: 5px 8px; }
+  .header-phone { font-size: 12px; }
 }
 
 @media (min-width: 640px) {
   .logo-img { height: 34px; }
+  .header-badge { font-size: 14px; padding: 8px 14px; }
 }
 
 .header-phone {

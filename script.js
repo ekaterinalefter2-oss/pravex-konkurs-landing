@@ -122,6 +122,8 @@
     $("headerPhone").textContent = CONFIG.organizerPhone;
     $("headerPhone").href = CONFIG.organizerPhoneHref;
     $("logoLink").href = CONFIG.siteUrl;
+    $("headerBadge").textContent = CONFIG.headerBadge;
+    $("headerBadge").hidden = !CONFIG.headerBadge;
     $("startBtn").textContent = CONFIG.heroCtaLabel;
     $("startBtn2").textContent = CONFIG.heroCtaLabel;
     $("rulesLinkBtn").textContent = CONFIG.heroRulesLabel;
