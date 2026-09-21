@@ -172,6 +172,12 @@ const CONFIG = {
   uploadMinDurationSec: 60,
   uploadMaxDurationSec: 180,
 
+  // Временно: общая папка на Google Диске для загрузки видео (пока не подключён приём файлов на сервере)
+  videoDriveUrl: "https://drive.google.com/drive/folders/1uilGKROPPcPDXQ4AwGNACpW3DSL0e1h7?usp=sharing",
+  videoDriveTitle: "Продублируйте видео на Google Диск",
+  videoDriveText: "Сайт пока не отправляет файл автоматически. Откройте папку по кнопке ниже и загрузите туда своё видео — назовите файл своим именем и телефоном, чтобы мы могли найти заявку.",
+  videoDriveBtnLabel: "Открыть папку на Google Диске",
+
   // ===== ШАГ 6 — Контакты и согласия =====
   step6Title: "Последний шаг: контакты и согласия",
   contactChannels: ["Telegram", "MAX", "WhatsApp", "Звонок"],

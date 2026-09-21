@@ -62,7 +62,7 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   margin: 0;
@@ -71,6 +71,7 @@ body {
   background: var(--color-bg);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; /* страховка: длинное слово/ссылка без пробелов не должна раздвигать страницу на мобильных */
 }
 
 img { max-width: 100%; display: block; }
@@ -291,6 +292,7 @@ a { color: var(--color-secondary); }
   font-size: 12px;
   color: var(--color-text-muted);
   max-width: 640px;
+  overflow-wrap: anywhere; /* длинная ссылка на правила не должна раздвигать колонку на мобильных */
 }
 
 /* ---------- "Как участвовать" ---------- */
@@ -646,6 +648,17 @@ a { color: var(--color-secondary); }
   font-size: 13px;
   margin-bottom: 16px;
 }
+
+/* Временная ссылка на общую папку Google Диска, пока сайт не отправляет видео сам */
+.drive-upload-box {
+  background: var(--color-card-bg);
+  border-radius: var(--radius-card);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.drive-upload-box h4 { margin: 0 0 6px; font-size: 15px; color: var(--color-primary); }
+.drive-upload-box p { margin: 0 0 12px; font-size: 13px; color: var(--color-text-muted); overflow-wrap: anywhere; }
 
 /* ---------- Форма контактов ---------- */
 .form-field { margin-bottom: 18px; }

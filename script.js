@@ -258,6 +258,10 @@
     $("q5Question").textContent = CONFIG.step5Question;
     $("uploadHint").textContent = "";
     $("dzHint").textContent = CONFIG.uploadHint;
+    $("driveUploadTitle").textContent = CONFIG.videoDriveTitle;
+    $("driveUploadText").textContent = CONFIG.videoDriveText;
+    $("driveUploadBtn").textContent = CONFIG.videoDriveBtnLabel;
+    $("driveUploadBtn").href = CONFIG.videoDriveUrl;
 
     // Шаг 6
     $("q6Title").textContent = CONFIG.step6Title;
