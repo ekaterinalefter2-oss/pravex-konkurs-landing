@@ -235,11 +235,6 @@
       q1Wrap.appendChild(buildOptionCard(opt.label, null, () => selectStep1(opt.id), () => state.step1 === opt.id));
     });
 
-    $("notClientTitle").textContent = CONFIG.notClientTitle;
-    $("notClientText").textContent = CONFIG.notClientText;
-    $("notClientPhone").textContent = CONFIG.organizerPhone;
-    $("notClientPhone").href = CONFIG.organizerPhoneHref;
-
     // Шаг 2
     $("q2Question").textContent = CONFIG.step2Question;
     const q2Wrap = $("q2Options");
@@ -543,12 +538,7 @@
 
   $("q1NextBtn").addEventListener("click", () => {
     if (!state.step1) return;
-    if (state.step1 === "no") {
-      showQuizStep("not-client");
-      metrikaGoal("konkurs_not_client");
-    } else {
-      showQuizStep("2");
-    }
+    showQuizStep("2");
   });
 
   $("q2NextBtn").addEventListener("click", () => {
@@ -880,6 +870,7 @@
 
   // Собирает данные анкеты и ссылку на видео в плоский набор полей для письма на почту.
   function buildEmailFields(appNumber) {
+    const stazhLabel = (CONFIG.step1Options.find((o) => o.id === state.step1) || {}).label || "—";
     const topicLabel = (CONFIG.topics.find((t) => t.id === state.topic) || {}).label || state.topic || "—";
     const formatObj = CONFIG.formats.find((f) => f.id === state.format) || {};
     const formatLabel = formatObj.consentLabel ? formatObj.consentLabel + " — " + formatObj.desc : (state.format || "—");
@@ -903,6 +894,7 @@
       "E-mail": state.contacts.email || "—",
       "Город": state.contacts.city,
       "Удобный канал связи": state.contacts.channel || "—",
+      "Стаж партнёрства": stazhLabel,
       "Тема истории": topicLabel,
       "Формат публикации": formatLabel,
       "Ссылка на видео (активна 6 дней)": state.videoViewUrl || "— (загрузка не завершилась, файл нужно запросить у участника отдельно)",
@@ -982,6 +974,8 @@
   // Инициализация
   // ---------------------------------------------------------------------
   function init() {
+    // Ответ на первый вопрос из старого черновика («Да/Нет») больше не подходит
+    if (state.step1 && !CONFIG.step1Options.some((o) => o.id === state.step1)) { state.step1 = null; saveState(); }
     renderStatic();
     renderQuizStatic();
     renderChannelSelectionInit();
