@@ -15,7 +15,7 @@
   const defaultState = {
     step1: null,
     topic: null,
-    videoMeta: null, // {name, size, duration, width, height} — сам файл не сохраняется в localStorage
+    videoMeta: null, // {name, size, duration, width, height} — сам файл в браузере не сохраняется
     videoViewUrl: "", // защищённая ссылка на файл в VK Object Storage — уходит в письмо на почту (живёт 6 дней)
     videoObjectKey: "", // путь к файлу в бакете — чтобы найти видео и после истечения ссылки
     contacts: { name: "", phone: "", email: "", city: "", channel: null },
@@ -35,9 +35,14 @@
   let currentUploadXhr = null; // текущая загрузка на сервер, чтобы можно было её оборвать
   let isDuplicateSubmission = false;
 
+  // Черновик анкеты хранится в sessionStorage: он живёт только пока открыта вкладка
+  // (обновление страницы его не сбрасывает, закрытие вкладки — стирает). Так на общем
+  // компьютере следующий человек не увидит чужие ФИО, телефон и согласия.
   function loadState() {
+    // Старые черновики раньше лежали в localStorage и переживали закрытие браузера — стираем их
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* noop */ }
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = sessionStorage.getItem(STORAGE_KEY);
       if (!raw) return structuredClone(defaultState);
       const parsed = JSON.parse(raw);
       const merged = Object.assign(structuredClone(defaultState), parsed);
@@ -51,7 +56,7 @@
 
   function saveState() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (e) {
       /* тихо игнорируем — например, приватный режим браузера */
     }
@@ -837,7 +842,7 @@
     metrikaGoal("konkurs_submit");
 
     // После успешной отправки прогресс анкеты в этой вкладке больше не нужен
-    localStorage.removeItem(STORAGE_KEY);
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) { /* noop */ }
   }
 
   // Собирает данные анкеты и ссылку на видео в плоский набор полей для письма на почту.
