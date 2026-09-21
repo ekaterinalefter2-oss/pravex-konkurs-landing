@@ -17,6 +17,9 @@
     topic: null,
     format: null,
     videoMeta: null, // {name, size, duration, width, height} — сам файл не сохраняется в localStorage
+    videoLink: "", // ссылка на загруженное видео (Google Диск и т.п.) — уходит в письмо на почту
+    caseNumber: "",
+    debtAmount: "",
     contacts: { name: "", phone: "", email: "", city: "", channel: null },
     consents: {
       rules: false,
@@ -285,17 +288,38 @@
     $("shareBtn").textContent = CONFIG.shareLabel;
 
     // Восстановление сохранённых контактных полей
-    $("fName").value = state.contacts.name || "";
     $("fPhone").value = state.contacts.phone || "";
     $("fEmail").value = state.contacts.email || "";
-    $("fCity").value = state.contacts.city || "";
-    ["fName", "fPhone", "fEmail", "fCity"].forEach((id) => {
+    ["fPhone", "fEmail"].forEach((id) => {
       $(id).addEventListener("input", (e) => {
-        const map = { fName: "name", fPhone: "phone", fEmail: "email", fCity: "city" };
+        const map = { fPhone: "phone", fEmail: "email" };
         state.contacts[map[id]] = e.target.value;
         saveState();
       });
     });
+
+    // Шаг "Данные для публикации"
+    $("pubTitle").textContent = CONFIG.pubTitle;
+    $("pFio").value = state.contacts.name || "";
+    $("pCaseNumber").value = state.caseNumber || "";
+    $("pCity").value = state.contacts.city || "";
+    $("pDebt").value = state.debtAmount || "";
+    $("pFio").addEventListener("input", (e) => { state.contacts.name = e.target.value; saveState(); });
+    $("pCaseNumber").addEventListener("input", (e) => { state.caseNumber = e.target.value; saveState(); });
+    $("pCity").addEventListener("input", (e) => { state.contacts.city = e.target.value; saveState(); });
+    $("pDebt").addEventListener("input", (e) => { state.debtAmount = e.target.value; saveState(); });
+    updatePubNote();
+
+    // Ссылка на видео (шаг 5)
+    $("videoLinkLabel").textContent = CONFIG.videoLinkLabel;
+    $("fVideoLink").value = state.videoLink || "";
+    $("fVideoLink").addEventListener("input", (e) => { state.videoLink = e.target.value; saveState(); });
+  }
+
+  function updatePubNote() {
+    const isOpen = state.format === "open";
+    $("pubNote").textContent = isOpen ? CONFIG.pubNoteOpen : CONFIG.pubNoteNameOnly;
+    $("pDebtField").hidden = !isOpen;
   }
 
   function buildOptionCard(label, iconHtml, onClick, isSelectedFn, desc) {
@@ -428,7 +452,7 @@
   // ---------------------------------------------------------------------
   // Навигация по шагам
   // ---------------------------------------------------------------------
-  const STEP_ORDER = ["1", "2", "3", "4", "5", "6"];
+  const STEP_ORDER = ["1", "2", "3", "pub", "4", "5", "6"];
   let currentStep = "1";
 
   function showQuizStep(stepKey) {
@@ -491,6 +515,25 @@
 
   $("q3NextBtn").addEventListener("click", () => {
     if (!state.format) return;
+    updatePubNote();
+    showQuizStep("pub");
+  });
+
+  $("pubNextBtn").addEventListener("click", () => {
+    const errors = [];
+    if (!state.contacts.name.trim()) errors.push("Укажите ФИО");
+    if (!state.caseNumber.trim()) errors.push("Укажите номер дела");
+    if (!state.contacts.city.trim()) errors.push("Укажите город");
+    if (state.format === "open" && !state.debtAmount.trim()) errors.push("Укажите сумму долга");
+
+    const errEl = $("pubError");
+    if (errors.length) {
+      errEl.textContent = errors.join(" · ");
+      errEl.hidden = false;
+      return;
+    }
+    errEl.hidden = true;
+    saveState();
     renderHints();
     showQuizStep("4");
   });
@@ -511,6 +554,13 @@
 
   $("toStep6Btn").addEventListener("click", () => {
     if (!videoFile) return;
+    const linkErrEl = $("videoLinkError");
+    if (!state.videoLink.trim()) {
+      linkErrEl.textContent = "Вставьте ссылку на загруженное видео — без неё заявка не дойдёт до организатора";
+      linkErrEl.hidden = false;
+      return;
+    }
+    linkErrEl.hidden = true;
     showQuizStep("6");
   });
 
@@ -682,7 +732,7 @@
     return errors;
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const errors = validateStep6();
     const errEl = $("formError");
 
@@ -702,20 +752,21 @@
     state.applicationNumber = appNumber;
     state.utm = getUtmFromUrl();
 
-    const payload = {
-      applicationNumber: appNumber,
-      submittedAtMsk: nowMsk(),
-      step1: state.step1,
-      topic: state.topic,
-      format: state.format,
-      videoMeta: state.videoMeta,
-      contacts: state.contacts,
-      consents: Object.assign({}, state.consents, { version: CONFIG.consents.version }),
-      utm: state.utm,
-      isRepeat: isDuplicateSubmission
-    };
+    const submitBtn = $("submitBtn");
+    submitBtn.disabled = true;
+    const submitBtnOriginalText = submitBtn.textContent;
+    submitBtn.textContent = "Отправляем…";
 
-    submitToBackend(payload, videoFile);
+    const sent = await submitToBackend(buildEmailFields(appNumber));
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = submitBtnOriginalText;
+
+    if (!sent) {
+      errEl.textContent = "Не получилось отправить заявку. Проверьте интернет и нажмите «Отправить» ещё раз — или позвоните по " + CONFIG.organizerPhone;
+      errEl.hidden = false;
+      return;
+    }
 
     saveState();
     $("applicationNumber").textContent = appNumber;
@@ -727,24 +778,63 @@
     localStorage.removeItem(STORAGE_KEY);
   }
 
-  function submitToBackend(payload, file) {
+  // Собирает данные анкеты и ссылку на видео в плоский набор полей для письма на почту.
+  function buildEmailFields(appNumber) {
+    const topicLabel = (CONFIG.topics.find((t) => t.id === state.topic) || {}).label || state.topic || "—";
+    const formatObj = CONFIG.formats.find((f) => f.id === state.format) || {};
+    const formatLabel = formatObj.consentLabel ? formatObj.consentLabel + " — " + formatObj.desc : (state.format || "—");
+    const consentsSummary = Object.entries(state.consents)
+      .filter(([key]) => key !== "distribution")
+      .map(([key, val]) => key + ": " + (val ? "да" : "нет"))
+      .join("; ");
+    const videoLocalInfo = state.videoMeta
+      ? state.videoMeta.name + ", " + (state.videoMeta.size / (1024 * 1024)).toFixed(1) + " МБ, " + Math.round(state.videoMeta.duration) + " сек"
+      : "не выбрано на сайте";
+
+    return {
+      _subject: "Заявка " + appNumber + " — конкурс видеоотзывов ПРАВЭКС",
+      _template: "table",
+      _captcha: "false",
+      _replyto: state.contacts.email || "",
+      "Номер заявки": appNumber,
+      "Дата и время (МСК)": nowMsk(),
+      "ФИО": state.contacts.name,
+      "Телефон": state.contacts.phone,
+      "E-mail": state.contacts.email || "—",
+      "Город": state.contacts.city,
+      "Удобный канал связи": state.contacts.channel || "—",
+      "Тема истории": topicLabel,
+      "Формат публикации": formatLabel,
+      "Номер дела": state.caseNumber,
+      "Сумма долга": state.format === "open" ? (state.debtAmount || "не указана") : "не указывается (формат «Полуоткрыто»)",
+      "Ссылка на видео": state.videoLink || "—",
+      "Видео, выбранное на сайте": videoLocalInfo,
+      ["Согласия (версия " + CONFIG.consents.version + ")"]: consentsSummary,
+      "UTM-метки": Object.keys(state.utm || {}).length ? JSON.stringify(state.utm) : "—",
+      "Повторная отправка": isDuplicateSubmission ? "да" : "нет"
+    };
+  }
+
+  // Отправляет данные заявки на почту через FormSubmit — без своего сервера.
+  // При первой заявке владельцу marketing@pravex24.ru придёт письмо со ссылкой
+  // для подтверждения приёма форм с этого сайта — его нужно один раз открыть.
+  function submitToBackend(fields) {
     if (!CONFIG.submitEndpoint) {
-      // ДЕМО-РЕЖИМ: реального бэкенда нет — письма на CONFIG.notifyEmails не уходят.
-      // Чтобы подключить приём заявок по-настоящему:
-      // 1) поднять серверный обработчик (например, облачную функцию),
-      //    который сохраняет видео в хранилище (Yandex Object Storage / VK Cloud)
-      //    и отправляет письмо с данными анкеты + ссылкой на видео на notifyEmails;
-      // 2) указать его адрес в CONFIG.submitEndpoint.
-      console.warn("[demo] Заявка НЕ отправлена на сервер — submitEndpoint не настроен.", payload);
-      return;
+      // ДЕМО-РЕЖИМ: submitEndpoint не настроен — заявки никуда не уходят.
+      console.warn("[demo] Заявка НЕ отправлена — submitEndpoint не настроен.", fields);
+      return Promise.resolve(true);
     }
 
-    const formData = new FormData();
-    formData.append("data", JSON.stringify(payload));
-    if (file) formData.append("video", file, file.name);
-
-    fetch(CONFIG.submitEndpoint, { method: "POST", body: formData })
-      .catch((err) => console.error("Ошибка отправки заявки:", err));
+    return fetch(CONFIG.submitEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(fields)
+    })
+      .then((res) => res.ok)
+      .catch((err) => {
+        console.error("Ошибка отправки заявки:", err);
+        return false;
+      });
   }
 
   $("shareBtn").addEventListener("click", () => {

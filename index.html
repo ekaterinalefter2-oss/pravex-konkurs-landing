@@ -129,6 +129,37 @@
             </div>
           </div>
 
+          <!-- Шаг "Данные для публикации" — сразу после выбора формата на шаге 3 -->
+          <div class="quiz-step" data-step="pub" hidden>
+            <h2 class="quiz-question" id="pubTitle"></h2>
+            <p class="quiz-note" id="pubNote"></p>
+
+            <div class="form-field">
+              <label for="pFio">ФИО</label>
+              <input type="text" id="pFio" autocomplete="name" />
+            </div>
+            <div class="form-field" id="pCaseNumberField">
+              <label for="pCaseNumber">Номер дела</label>
+              <input type="text" id="pCaseNumber" placeholder="А00-00000/2026" />
+            </div>
+            <div class="form-field" id="pCityField">
+              <label for="pCity">Город</label>
+              <input type="text" id="pCity" autocomplete="address-level2" />
+            </div>
+            <div class="form-field" id="pDebtField">
+              <label for="pDebt">Сумма долга</label>
+              <input type="text" id="pDebt" placeholder="Например, 850 000 ₽" />
+            </div>
+
+            <div class="field-error" id="pubError" hidden></div>
+
+            <div class="quiz-nav">
+              <button class="btn btn-secondary" data-nav="back">Назад</button>
+              <span class="spacer"></span>
+              <button class="btn btn-primary" id="pubNextBtn">Далее</button>
+            </div>
+          </div>
+
           <!-- Шаг 4 -->
           <div class="quiz-step" data-step="4" hidden>
             <h2 class="quiz-question" id="q4Title"></h2>
@@ -196,7 +227,13 @@
               <h4 id="driveUploadTitle"></h4>
               <p id="driveUploadText"></p>
               <a class="btn btn-secondary" id="driveUploadBtn" target="_blank" rel="noopener"></a>
+              <div class="form-field" id="videoLinkField">
+                <label for="fVideoLink" id="videoLinkLabel"></label>
+                <input type="url" id="fVideoLink" placeholder="https://drive.google.com/..." />
+              </div>
             </div>
+
+            <div class="field-error" id="videoLinkError" hidden></div>
 
             <div class="quiz-nav">
               <button class="btn btn-secondary" data-nav="back">Назад</button>
@@ -210,20 +247,12 @@
             <h2 class="quiz-question" id="q6Title"></h2>
 
             <div class="form-field">
-              <label for="fName">ФИО</label>
-              <input type="text" id="fName" autocomplete="name" />
-            </div>
-            <div class="form-field">
               <label for="fPhone">Телефон (тот, что указан в договоре)</label>
               <input type="tel" id="fPhone" autocomplete="tel" placeholder="+7 9XX XXX-XX-XX" />
             </div>
             <div class="form-field">
               <label for="fEmail">E-mail (необязательно)</label>
               <input type="email" id="fEmail" autocomplete="email" />
-            </div>
-            <div class="form-field">
-              <label for="fCity">Город</label>
-              <input type="text" id="fCity" autocomplete="address-level2" />
             </div>
             <div class="form-field">
               <label>Удобный канал связи</label>
