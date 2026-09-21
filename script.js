@@ -248,15 +248,6 @@
       q2Wrap.appendChild(buildOptionCard(t.label, ICONS[t.icon], () => selectTopic(t.id), () => state.topic === t.id));
     });
 
-    // Шаг 3
-    $("q3Question").textContent = CONFIG.step3Question;
-    $("q3Note").textContent = CONFIG.step3Note;
-    const q3Wrap = $("q3Options");
-    q3Wrap.innerHTML = "";
-    CONFIG.formats.forEach((f) => {
-      q3Wrap.appendChild(buildOptionCard(f.label, null, () => selectFormat(f.id), () => state.format === f.id, f.desc));
-    });
-
     // Шаг 4
     $("q4Title").textContent = CONFIG.step4Title;
     const rulesList = $("filmingRulesList");
@@ -319,7 +310,7 @@
     $("pCity").value = state.contacts.city || "";
     $("pFio").addEventListener("input", (e) => { state.contacts.name = e.target.value; saveState(); });
     $("pCity").addEventListener("input", (e) => { state.contacts.city = e.target.value; saveState(); });
-    updatePubNote();
+    $("pubNote").textContent = CONFIG.pubNote;
   }
 
   // Слайдер фото в баннере: автопрокрутка, точки, свайп; на паузе при наведении/фокусе
@@ -384,11 +375,6 @@
     start();
   }
 
-  function updatePubNote() {
-    const isOpen = state.format === "open";
-    $("pubNote").textContent = isOpen ? CONFIG.pubNoteOpen : CONFIG.pubNoteNameOnly;
-  }
-
   function buildOptionCard(label, iconHtml, onClick, isSelectedFn, desc) {
     const card = el("button", { className: "option-card", attrs: { type: "button" } });
     if (iconHtml) {
@@ -417,14 +403,6 @@
     saveState();
     refreshOptionSelection("q2Options", (idx) => CONFIG.topics[idx].id === id);
     $("q2NextBtn").disabled = false;
-  }
-
-  function selectFormat(id) {
-    state.format = id;
-    saveState();
-    refreshOptionSelection("q3Options", (idx) => CONFIG.formats[idx].id === id);
-    $("q3NextBtn").disabled = false;
-    prefillDistributionFromFormat(id);
   }
 
   function refreshOptionSelection(wrapId, matchFn) {
@@ -479,8 +457,6 @@
       radio.checked = state.format === f.id;
       radio.addEventListener("change", () => {
         state.format = f.id;
-        refreshOptionSelection("q3Options", (idx) => CONFIG.formats[idx].id === f.id);
-        $("q3NextBtn").disabled = false;
         prefillDistributionFromFormat(f.id);
       });
       label.appendChild(radio);
@@ -488,6 +464,7 @@
       formatBox.appendChild(label);
     });
     wrap.appendChild(formatBox);
+    wrap.appendChild(el("p", { className: "consent-format-note", text: CONFIG.formatNote }));
 
     // 3 — использование изображения
     consent("image", c.image, "Согласие на использование изображения", "Здесь размещается полный текст согласия на обнародование и использование изображения (ст. 152.1 ГК РФ, п. 10.1.3 правил).");
@@ -519,7 +496,7 @@
   // ---------------------------------------------------------------------
   // Навигация по шагам
   // ---------------------------------------------------------------------
-  const STEP_ORDER = ["1", "2", "3", "pub", "4", "consents", "5", "6"];
+  const STEP_ORDER = ["1", "2", "pub", "4", "consents", "5", "6"];
   let currentStep = "1";
 
   function showQuizStep(stepKey) {
@@ -576,13 +553,6 @@
 
   $("q2NextBtn").addEventListener("click", () => {
     if (!state.topic) return;
-    renderHints();
-    showQuizStep("3");
-  });
-
-  $("q3NextBtn").addEventListener("click", () => {
-    if (!state.format) return;
-    updatePubNote();
     showQuizStep("pub");
   });
 
@@ -1029,7 +999,6 @@
       renderHints();
     }
     if (state.topic) $("q2NextBtn").disabled = false;
-    if (state.format) $("q3NextBtn").disabled = false;
   }
 
   document.addEventListener("DOMContentLoaded", init);
