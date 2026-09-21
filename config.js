@@ -101,8 +101,8 @@ const CONFIG = {
   step1Question: "Как давно вы уже партнёр?",
   step1Options: [
     { id: "lt1", label: "Менее года" },
-    { id: "1_2", label: "От 1 до 2 лет" },
-    { id: "3plus", label: "От 3 лет" }
+    { id: "1_3", label: "От 1 до 3 лет" },
+    { id: "gt3", label: "Более 3 лет" }
   ],
 
   // ===== ШАГ 2 — Номинация =====
