@@ -176,6 +176,8 @@
     $("footerPhone").textContent = CONFIG.organizerPhone;
     $("footerPhone").href = CONFIG.organizerPhoneHref;
     $("footerRules").href = CONFIG.rulesUrl;
+    $("footerRules").target = "_blank";
+    $("footerRules").rel = "noopener";
     $("footerPrivacy").href = CONFIG.privacyUrl;
     $("cookiePrivacyLink").href = CONFIG.privacyUrl;
 
@@ -366,7 +368,9 @@
     ));
 
     // 0 — правила конкурса
-    consent("rules", c.rules, "Правила конкурса", "Здесь размещается полный текст правил конкурса.");
+    wrap.appendChild(buildConsentRow("consent_rules", c.rules, state.consents.rules,
+      (val) => { state.consents.rules = val; saveState(); },
+      () => window.open(CONFIG.rulesUrl, "_blank", "noopener")));
 
     // 1 — обработка ПДн
     consent("pdn", c.pdn, "Согласие на обработку персональных данных", "Здесь размещается полный текст согласия на обработку персональных данных (152-ФЗ, п. 10.1.1 правил).");
