@@ -907,3 +907,13 @@ a { color: var(--color-secondary); }
   white-space: nowrap;
   border: 0;
 }
+
+/* Выбор формата внутри согласия на ПДн для распространения */
+.consent-formats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: -4px 0 14px 32px;
+}
+.consent-format { font-size: 14px; cursor: pointer; }
+.consent-format input { margin-right: 6px; accent-color: var(--color-primary); }

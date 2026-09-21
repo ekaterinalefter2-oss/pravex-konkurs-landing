@@ -21,7 +21,9 @@
     consents: {
       rules: false,
       pdn: false,
+      pdnDistribution: false,
       image: false,
+      license: false,
       distribution: { face: false, name: false, city: false, case_number: false, debt_amount: false }
     },
     utm: {},
@@ -37,7 +39,10 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return structuredClone(defaultState);
       const parsed = JSON.parse(raw);
-      return Object.assign(structuredClone(defaultState), parsed);
+      const merged = Object.assign(structuredClone(defaultState), parsed);
+      // Новые поля согласий, которых нет в ранее сохранённом черновике
+      merged.consents = Object.assign(structuredClone(defaultState.consents), parsed.consents || {});
+      return merged;
     } catch (e) {
       return structuredClone(defaultState);
     }
@@ -354,14 +359,42 @@
     wrap.innerHTML = "";
     const c = CONFIG.consents;
 
-    // Согласие 1 — правила и лицензия
-    wrap.appendChild(buildConsentRow("consent_rules", c.rules, state.consents.rules, (val) => { state.consents.rules = val; saveState(); }, () => openRulesModal("Правила конкурса", "Здесь размещается полный текст правил конкурса и раздела 11 (лицензия на использование видеоролика).")));
+    const consent = (key, text, modalTitle, modalBody) => wrap.appendChild(buildConsentRow(
+      "consent_" + key, text, state.consents[key],
+      (val) => { state.consents[key] = val; saveState(); },
+      () => openRulesModal(modalTitle, modalBody)
+    ));
 
-    // Согласие 2 — ПДн
-    wrap.appendChild(buildConsentRow("consent_pdn", c.pdn, state.consents.pdn, (val) => { state.consents.pdn = val; saveState(); }, () => openRulesModal("Согласие на обработку персональных данных", "Здесь размещается полный текст согласия на обработку персональных данных (152-ФЗ, п. 10.1.1 правил).")));
+    // 0 — правила конкурса
+    consent("rules", c.rules, "Правила конкурса", "Здесь размещается полный текст правил конкурса.");
 
-    // Согласие 3 — изображение
-    wrap.appendChild(buildConsentRow("consent_image", c.image, state.consents.image, (val) => { state.consents.image = val; saveState(); }, () => openRulesModal("Согласие на использование изображения", "Здесь размещается полный текст согласия на обнародование и использование изображения (ст. 152.1 ГК РФ, п. 10.1.3 правил).")));
+    // 1 — обработка ПДн
+    consent("pdn", c.pdn, "Согласие на обработку персональных данных", "Здесь размещается полный текст согласия на обработку персональных данных (152-ФЗ, п. 10.1.1 правил).");
+
+    // 2 — ПДн, разрешённые для распространения, с выбором формата
+    consent("pdnDistribution", c.pdnDistribution, "Согласие на обработку персональных данных, разрешённых для распространения", "Здесь размещается полный текст отдельного согласия на обработку персональных данных, разрешённых субъектом для распространения (ст. 10.1 152-ФЗ), с указанием выбранного формата: «Открытый» или «Полуоткрытый».");
+    const formatBox = el("div", { className: "consent-formats" });
+    CONFIG.formats.forEach((f) => {
+      const label = el("label", { className: "consent-format" });
+      const radio = el("input", { attrs: { type: "radio", name: "consent_format", value: f.id } });
+      radio.checked = state.format === f.id;
+      radio.addEventListener("change", () => {
+        state.format = f.id;
+        refreshOptionSelection("q3Options", (idx) => CONFIG.formats[idx].id === f.id);
+        $("q3NextBtn").disabled = false;
+        prefillDistributionFromFormat(f.id);
+      });
+      label.appendChild(radio);
+      label.appendChild(document.createTextNode(" " + f.consentLabel + " — " + f.desc));
+      formatBox.appendChild(label);
+    });
+    wrap.appendChild(formatBox);
+
+    // 3 — использование изображения
+    consent("image", c.image, "Согласие на использование изображения", "Здесь размещается полный текст согласия на обнародование и использование изображения (ст. 152.1 ГК РФ, п. 10.1.3 правил).");
+
+    // 4 — права ПРАВЭКС на видео, голос и текст отзыва
+    consent("license", c.license, "Документ о правах на использование отзыва", "Здесь размещается полный текст документа о правах ПРАВЭКС на использование видео, голоса и текста отзыва, включая монтаж и рекламное использование (раздел 11 правил).");
   }
 
   function buildConsentRow(id, labelText, checked, onChange, onOpenFull) {
@@ -628,7 +661,10 @@
     if (!state.consents.rules) errors.push("Нужно согласие с правилами конкурса");
     if (!state.consents.pdn) errors.push("Нужно согласие на обработку персональных данных");
 
+    if (!state.consents.pdnDistribution) errors.push("Нужно согласие на обработку персональных данных, разрешённых для распространения");
+    if (!state.format) errors.push("Выберите формат публикации: «Открытый» или «Полуоткрытый»");
     if (!state.consents.image) errors.push("Нужно согласие на использование изображения");
+    if (!state.consents.license) errors.push("Нужно согласие на использование видео, голоса и текста отзыва");
 
     // Honeypot: если заполнено — вероятно, бот
     if ($("hp_website").value.trim() !== "") {
