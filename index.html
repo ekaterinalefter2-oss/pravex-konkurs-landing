@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Конкурс видеоотзывов ПРАВЭКС — Расскажите тем, кто ещё боится</title>
-  <meta name="description" content="Снимите короткое видео о своём опыте и получите подарок. Приём заявок до 2 ноября." />
+  <title>Расскажи — как ты стал партнёром ПРАВЭКС · Конкурс видеоотзывов</title>
+  <meta name="description" content="Расскажите, как вы стали партнёром ПРАВЭКС, и поборитесь за 5 000 ₽ на Ozon. Голосуют сами партнёры. Приём роликов до 2 ноября." />
   <link rel="preload" href="assets/fonts/manrope-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -29,13 +29,13 @@
       <div class="hero-arc" aria-hidden="true"></div>
       <div class="container hero-grid">
         <div class="hero-text">
-          <h1 class="hero-title" id="heroTitle">Расскажите тем, кто ещё боится</h1>
+          <h1 class="hero-title" id="heroTitle">Ваш опыт — чей-то вдохновляющий старт</h1>
           <p class="hero-subtitle" id="heroSubtitle">Вы уже прошли путь, который для кого-то сейчас только начинается.</p>
 
           <div class="hero-badges" id="heroBadges"></div>
 
           <div class="hero-actions">
-            <button class="btn btn-primary" id="startBtn">Участвовать</button>
+            <button class="btn btn-primary" id="startBtn">Снять видео</button>
             <button class="btn btn-text" id="rulesLinkBtn" type="button">Правила конкурса</button>
           </div>
 
@@ -60,6 +60,15 @@
       </div>
     </section>
 
+    <!-- ===== БЛОК "НОМИНАЦИИ" ===== -->
+    <section class="section section-nominations" id="nominationsSection">
+      <div class="container">
+        <h2 class="section-title" id="nominationsTitle"></h2>
+        <p class="section-lead" id="nominationsLead"></p>
+        <div class="nominations-grid" id="nominationsGrid"></div>
+      </div>
+    </section>
+
     <!-- ===== БЛОК "КАК УЧАСТВОВАТЬ" ===== -->
     <section class="section" id="howSection">
       <div class="container">
@@ -70,7 +79,7 @@
         <div id="faqList"></div>
 
         <div style="text-align:center; margin-top:32px;">
-          <button class="btn btn-primary" id="startBtn2">Участвовать</button>
+          <button class="btn btn-primary" id="startBtn2">Снять видео</button>
         </div>
       </div>
     </section>
@@ -138,19 +147,10 @@
               <label for="pFio">ФИО</label>
               <input type="text" id="pFio" autocomplete="name" />
             </div>
-            <div class="form-field" id="pCaseNumberField">
-              <label for="pCaseNumber">Номер дела</label>
-              <input type="text" id="pCaseNumber" placeholder="А00-00000/2026" />
-            </div>
             <div class="form-field" id="pCityField">
               <label for="pCity">Город</label>
               <input type="text" id="pCity" autocomplete="address-level2" />
             </div>
-            <div class="form-field" id="pDebtField">
-              <label for="pDebt">Сумма долга</label>
-              <input type="text" id="pDebt" placeholder="Например, 850 000 ₽" />
-            </div>
-
             <div class="field-error" id="pubError" hidden></div>
 
             <div class="quiz-nav">
@@ -251,7 +251,7 @@
             <h2 class="quiz-question" id="q6Title"></h2>
 
             <div class="form-field">
-              <label for="fPhone">Телефон (тот, что указан в договоре)</label>
+              <label for="fPhone">Телефон</label>
               <input type="tel" id="fPhone" autocomplete="tel" placeholder="+7 9XX XXX-XX-XX" />
             </div>
             <div class="form-field">

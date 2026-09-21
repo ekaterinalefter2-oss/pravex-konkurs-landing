@@ -308,6 +308,45 @@ a { color: var(--color-secondary); }
   text-align: center;
 }
 
+/* ---------- Номинации ---------- */
+.section-lead {
+  margin: -16px 0 28px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 16px;
+}
+
+.nominations-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 860px) {
+  .nominations-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.nomination-card {
+  background: #fff;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 22px 20px;
+}
+
+.nomination-tag {
+  display: inline-block;
+  background: var(--color-card-bg);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 12px;
+  margin-bottom: 12px;
+}
+
+.nomination-card h3 { margin: 0 0 8px; font-size: 20px; color: var(--color-primary); }
+.nomination-card p { margin: 0; font-size: 14px; color: var(--color-text-muted); }
+
 .steps-grid {
   display: grid;
   grid-template-columns: 1fr;

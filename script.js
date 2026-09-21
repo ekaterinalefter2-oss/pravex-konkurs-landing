@@ -19,8 +19,6 @@
     videoMeta: null, // {name, size, duration, width, height} — сам файл не сохраняется в localStorage
     videoViewUrl: "", // защищённая ссылка на файл в VK Object Storage — уходит в письмо на почту (живёт 6 дней)
     videoObjectKey: "", // путь к файлу в бакете — чтобы найти видео и после истечения ссылки
-    caseNumber: "",
-    debtAmount: "",
     contacts: { name: "", phone: "", email: "", city: "", channel: null },
     consents: {
       rules: false,
@@ -28,7 +26,7 @@
       pdnDistribution: false,
       image: false,
       license: false,
-      distribution: { face: false, name: false, city: false, case_number: false, debt_amount: false }
+      distribution: { face: false, name: false, city: false }
     },
     utm: {},
     applicationNumber: null
@@ -148,6 +146,19 @@
       .replace("{rulesLink}", CONFIG.rulesUrl);
     $("adDisclaimer").textContent = disclaimer.replace(/\.\.(?!\.)/g, "."); // "г.." после даты → "г."
 
+    // Номинации — карточки из тем шага 2
+    $("nominationsTitle").textContent = CONFIG.nominationsTitle;
+    $("nominationsLead").textContent = CONFIG.nominationsLead;
+    const nominationsGrid = $("nominationsGrid");
+    nominationsGrid.innerHTML = "";
+    CONFIG.topics.filter((t) => t.desc).forEach((t, i) => {
+      const card = el("div", { className: "nomination-card" });
+      card.appendChild(el("span", { className: "nomination-tag", text: "Номинация " + (i + 1) }));
+      card.appendChild(el("h3", { text: t.label }));
+      card.appendChild(el("p", { text: t.desc }));
+      nominationsGrid.appendChild(card);
+    });
+
     // Как участвовать
     const howGrid = $("howGrid");
     howGrid.innerHTML = "";
@@ -155,7 +166,7 @@
       const card = el("div", { className: "step-card" });
       card.appendChild(el("span", { className: "step-num", text: String(i + 1) }));
       card.appendChild(el("h3", { text: step.title }));
-      card.appendChild(el("p", { text: step.text }));
+      card.appendChild(el("p", { text: step.text.replace("{results}", CONFIG.resultsDate) }));
       howGrid.appendChild(card);
     });
 
@@ -171,7 +182,7 @@
         html: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
       }));
       details.appendChild(summary);
-      details.appendChild(el("div", { className: "faq-answer", text: item.a }));
+      details.appendChild(el("div", { className: "faq-answer", text: item.a.replace("{results}", CONFIG.resultsDate) }));
       faqList.appendChild(details);
     });
 
@@ -303,20 +314,15 @@
     // Шаг "Данные для публикации"
     $("pubTitle").textContent = CONFIG.pubTitle;
     $("pFio").value = state.contacts.name || "";
-    $("pCaseNumber").value = state.caseNumber || "";
     $("pCity").value = state.contacts.city || "";
-    $("pDebt").value = state.debtAmount || "";
     $("pFio").addEventListener("input", (e) => { state.contacts.name = e.target.value; saveState(); });
-    $("pCaseNumber").addEventListener("input", (e) => { state.caseNumber = e.target.value; saveState(); });
     $("pCity").addEventListener("input", (e) => { state.contacts.city = e.target.value; saveState(); });
-    $("pDebt").addEventListener("input", (e) => { state.debtAmount = e.target.value; saveState(); });
     updatePubNote();
   }
 
   function updatePubNote() {
     const isOpen = state.format === "open";
     $("pubNote").textContent = isOpen ? CONFIG.pubNoteOpen : CONFIG.pubNoteNameOnly;
-    $("pDebtField").hidden = !isOpen;
   }
 
   function buildOptionCard(label, iconHtml, onClick, isSelectedFn, desc) {
@@ -373,9 +379,9 @@
   function prefillDistributionFromFormat(formatId) {
     const d = state.consents.distribution;
     if (formatId === "open") {
-      d.face = true; d.name = true; d.city = true; d.case_number = true; d.debt_amount = true;
+      d.face = true; d.name = true; d.city = false;
     } else if (formatId === "name_only") {
-      d.face = true; d.name = true; d.city = false; d.case_number = true; d.debt_amount = false;
+      d.face = false; d.name = true; d.city = false;
     }
     saveState();
     renderConsentsBlock();
@@ -519,9 +525,7 @@
   $("pubNextBtn").addEventListener("click", () => {
     const errors = [];
     if (!state.contacts.name.trim()) errors.push("Укажите ФИО");
-    if (!state.caseNumber.trim()) errors.push("Укажите номер дела");
     if (!state.contacts.city.trim()) errors.push("Укажите город");
-    if (state.format === "open" && !state.debtAmount.trim()) errors.push("Укажите сумму долга");
 
     const errEl = $("pubError");
     if (errors.length) {
@@ -867,8 +871,6 @@
       "Удобный канал связи": state.contacts.channel || "—",
       "Тема истории": topicLabel,
       "Формат публикации": formatLabel,
-      "Номер дела": state.caseNumber,
-      "Сумма долга": state.format === "open" ? (state.debtAmount || "не указана") : "не указывается (формат «Полуоткрыто»)",
       "Ссылка на видео (активна 6 дней)": state.videoViewUrl || "— (загрузка не завершилась, файл нужно запросить у участника отдельно)",
       "Путь к файлу в хранилище": state.videoObjectKey || "—",
       "Видео, выбранное на сайте": videoLocalInfo,
