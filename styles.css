@@ -99,6 +99,7 @@ a { color: var(--color-secondary); }
 
 /* ---------- Шапка ---------- */
 .site-header {
+  gap: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -118,6 +119,11 @@ a { color: var(--color-secondary); }
 }
 
 .logo-img { height: 28px; width: auto; }
+
+@media (max-width: 380px) {
+  .logo-img { height: 22px; }
+  .header-phone { font-size: 13px; }
+}
 
 @media (min-width: 640px) {
   .logo-img { height: 34px; }
@@ -841,6 +847,9 @@ a { color: var(--color-secondary); }
   align-items: flex-start;
   margin-bottom: 16px;
 }
+
+#footerOrganizer { font-weight: 700; color: var(--color-text); margin-bottom: 4px; }
+#footerRequisites { white-space: pre-line; }
 
 .footer-links {
   display: flex;

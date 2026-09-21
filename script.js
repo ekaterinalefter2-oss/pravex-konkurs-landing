@@ -136,7 +136,7 @@
       .replace("{organizer}", CONFIG.organizerName)
       .replace("{prizes}", CONFIG.prizesDisclaimerText)
       .replace("{rulesLink}", CONFIG.rulesUrl);
-    $("adDisclaimer").textContent = disclaimer;
+    $("adDisclaimer").textContent = disclaimer.replace(/\.\.(?!\.)/g, "."); // "г.." после даты → "г."
 
     // Как участвовать
     const howGrid = $("howGrid");
