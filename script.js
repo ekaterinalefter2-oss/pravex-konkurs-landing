@@ -887,35 +887,18 @@
   // Отправляет данные заявки на почту через FormSubmit — без своего сервера.
   // При первой заявке владельцу marketing@pravex24.ru придёт письмо со ссылкой
   // для подтверждения приёма форм с этого сайта — его нужно один раз открыть.
+  // Заявка уходит на наш же сервер (/api/submit-application), а уже он пересылает
+  // её на почту через FormSubmit. Так участник ни разу не обращается к стороннему
+  // иностранному сервису напрямую из своего браузера — раньше это было причиной,
+  // что заявки не доходили из сетей, откуда formsubmit.co недоступен напрямую.
   function submitToBackend(fields) {
-    if (!CONFIG.submitEndpoint) {
-      // ДЕМО-РЕЖИМ: submitEndpoint не настроен — заявки никуда не уходят.
-      console.warn("[demo] Заявка НЕ отправлена — submitEndpoint не настроен.", fields);
-      return Promise.resolve(true);
-    }
-
-    return fetch(CONFIG.submitEndpoint, {
+    return fetch("/api/submit-application", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(fields)
     })
-      .then((res) =>
-        res.json()
-          .catch(() => null)
-          .then((data) => {
-            // FormSubmit отвечает HTTP 200 даже когда письмо НЕ ушло (например,
-            // форма ещё не подтверждена письмом "Activate Form" или превышен
-            // лимит бесплатного тарифа) — это видно только по полю success
-            // в самом теле ответа. Раньше здесь проверялся только res.ok,
-            // из-за этого сайт показывал участнику «заявка отправлена», а
-            // письмо организатору на самом деле не приходило.
-            if (!res.ok) return false;
-            if (data && typeof data.success !== "undefined") {
-              return data.success === true || data.success === "true";
-            }
-            return true;
-          })
-      )
+      .then((res) => res.json().catch(() => null))
+      .then((data) => !!(data && data.success))
       .catch((err) => {
         console.error("Ошибка отправки заявки:", err);
         return false;
