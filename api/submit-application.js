@@ -38,14 +38,27 @@ module.exports = async (req, res) => {
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(body)
     });
-    const data = await upstream.json().catch(() => null);
+    const rawText = await upstream.text();
+    let data = null;
+    try { data = JSON.parse(rawText); } catch (e) { /* не JSON — см. диагностику ниже */ }
     // FormSubmit отвечает HTTP 200 даже когда письмо не ушло (форма ещё не
     // активирована, превышен лимит бесплатного тарифа и т.п.) — смотрим
     // на поле success в самом теле ответа, а не только на код ответа.
     const ok = upstream.ok && !!data && (data.success === true || data.success === "true");
+    if (req.query && req.query.debug === "1") {
+      // Временный режим диагностики (?debug=1) — виден настоящий ответ FormSubmit,
+      // если он не JSON (например, Cloudflare отдал страницу-заглушку вместо API).
+      res.status(ok ? 200 : 502).json({
+        success: ok,
+        upstreamStatus: upstream.status,
+        upstreamContentType: upstream.headers.get("content-type"),
+        upstreamRawText: rawText.slice(0, 800)
+      });
+      return;
+    }
     res.status(ok ? 200 : 502).json({ success: ok, upstream: data || null });
   } catch (err) {
     console.error("Ошибка пересылки заявки на почту:", err);
-    res.status(502).json({ success: false, error: "upstream_failed" });
+    res.status(502).json({ success: false, error: "upstream_failed", message: String(err && err.message || err) });
   }
 };
