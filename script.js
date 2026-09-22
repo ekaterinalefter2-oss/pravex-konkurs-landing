@@ -205,7 +205,7 @@
     $("cookiePrivacyLink").href = CONFIG.privacyUrl;
 
     // Демо-баннер
-    $("demoBanner").hidden = !!CONFIG.submitEndpoint;
+    $("demoBanner").hidden = !!CONFIG.emailDeliveryConfigured;
 
     // Проверка дедлайна
     const deadline = new Date(CONFIG.submissionDeadline);
@@ -884,13 +884,8 @@
     };
   }
 
-  // Отправляет данные заявки на почту через FormSubmit — без своего сервера.
-  // При первой заявке владельцу marketing@pravex24.ru придёт письмо со ссылкой
-  // для подтверждения приёма форм с этого сайта — его нужно один раз открыть.
-  // Заявка уходит на наш же сервер (/api/submit-application), а уже он пересылает
-  // её на почту через FormSubmit. Так участник ни разу не обращается к стороннему
-  // иностранному сервису напрямую из своего браузера — раньше это было причиной,
-  // что заявки не доходили из сетей, откуда formsubmit.co недоступен напрямую.
+  // Заявка уходит на наш же сервер (/api/submit-application), а он уже сам
+  // отправляет письмо по SMTP через VK WorkMail (см. подробности в этом файле).
   function submitToBackend(fields) {
     return fetch("/api/submit-application", {
       method: "POST",

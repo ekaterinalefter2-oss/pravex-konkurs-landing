@@ -1,26 +1,44 @@
 /**
- * Серверная функция (Vercel). Принимает заявку конкурса с сайта и сама
- * пересылает её на почту через FormSubmit — вместо того, чтобы это делал
- * браузер участника напрямую.
+ * Серверная функция (Vercel). Принимает заявку конкурса с сайта и отправляет
+ * её письмом напрямую через SMTP вашей почты VK WorkMail — без сторонних
+ * сервисов вроде FormSubmit.
  *
- * Почему так: раньше сайт обращался к formsubmit.co прямо из браузера
- * участника. Из некоторых сетей в России иностранные сервисы бывают
- * недоступны или нестабильны — заявка могла не дойти без единой ошибки
- * на экране у участника. Теперь к formsubmit.co обращается сервер сайта
- * (он работает за границей, где сервис доступен всегда), а участник
- * весь путь общается только с нашим собственным доменом.
+ * Раньше письмо уходило через FormSubmit: сначала это делал браузер участника
+ * (и мог не достучаться до иностранного сервиса из некоторых сетей в России),
+ * потом это перенесли на сервер сайта — но выяснилось, что защита Cloudflare
+ * перед FormSubmit блокирует именно запросы с серверов (принимает их за ботов).
+ * SMTP-отправка с прямой авторизацией на smtp.mail.ru обоих этих проблем не имеет.
  *
- * Адрес получателя не секрет, но чтобы поменять его без переразвёртывания
- * кода — можно переопределить переменной окружения FORMSUBMIT_URL в Vercel.
+ * Нужные переменные окружения — добавляются в Vercel (Settings → Environment
+ * Variables), в код не попадают:
+ *   SMTP_USER — адрес почты, с которой отправляем, например marketing@pravex24.ru
+ *   SMTP_PASS — пароль приложения для этого ящика (Аккаунт → Безопасность →
+ *               Пароли для внешних приложений в VK WorkMail; обычный пароль
+ *               от почты для SMTP не подходит)
+ *   SMTP_TO   — куда слать заявки, через запятую можно указать несколько
+ *               адресов, например "marketing@pravex24.ru,prav-ex748@pravex24.ru"
+ *               (по умолчанию — то же значение, что и SMTP_USER)
+ * Необязательные, для другого провайдера почты:
+ *   SMTP_HOST (по умолчанию smtp.mail.ru), SMTP_PORT (по умолчанию 465)
  */
 
-const FORMSUBMIT_URL = process.env.FORMSUBMIT_URL || "https://formsubmit.co/ajax/marketing@pravex24.ru";
+const nodemailer = require("nodemailer");
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ success: false, error: "method_not_allowed" });
     return;
   }
+
+  const { SMTP_USER, SMTP_PASS } = process.env;
+  if (!SMTP_USER || !SMTP_PASS) {
+    console.error("Не настроены переменные окружения почты: нужны SMTP_USER и SMTP_PASS");
+    res.status(500).json({ success: false, error: "server_not_configured" });
+    return;
+  }
+  const SMTP_HOST = process.env.SMTP_HOST || "smtp.mail.ru";
+  const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
+  const SMTP_TO = (process.env.SMTP_TO || SMTP_USER).split(",").map((s) => s.trim()).filter(Boolean);
 
   let body = req.body;
   if (typeof body === "string") {
@@ -32,33 +50,37 @@ module.exports = async (req, res) => {
   }
   body = body || {};
 
+  // Поля вида {"Ключ": "значение"} — превращаем в простую HTML-таблицу и текстовую копию.
+  const entries = Object.entries(body).filter(([key]) => !key.startsWith("_"));
+  const escapeHtml = (v) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const htmlRows = entries
+    .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#6B6072;white-space:nowrap;vertical-align:top">${escapeHtml(k)}</td><td style="padding:4px 0">${escapeHtml(v)}</td></tr>`)
+    .join("");
+  const html = `<table cellpadding="0" cellspacing="0">${htmlRows}</table>`;
+  const text = entries.map(([k, v]) => `${k}: ${v}`).join("\n");
+
+  const subject = typeof body._subject === "string" && body._subject ? body._subject : "Заявка — конкурс видеоотзывов ПРАВЭКС";
+  const replyTo = typeof body._replyto === "string" && body._replyto ? body._replyto : undefined;
+
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS }
+  });
+
   try {
-    const upstream = await fetch(FORMSUBMIT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify(body)
+    await transporter.sendMail({
+      from: `"ПРАВЭКС · Конкурс" <${SMTP_USER}>`,
+      to: SMTP_TO,
+      replyTo,
+      subject,
+      text,
+      html
     });
-    const rawText = await upstream.text();
-    let data = null;
-    try { data = JSON.parse(rawText); } catch (e) { /* не JSON — см. диагностику ниже */ }
-    // FormSubmit отвечает HTTP 200 даже когда письмо не ушло (форма ещё не
-    // активирована, превышен лимит бесплатного тарифа и т.п.) — смотрим
-    // на поле success в самом теле ответа, а не только на код ответа.
-    const ok = upstream.ok && !!data && (data.success === true || data.success === "true");
-    if (req.query && req.query.debug === "1") {
-      // Временный режим диагностики (?debug=1) — виден настоящий ответ FormSubmit,
-      // если он не JSON (например, Cloudflare отдал страницу-заглушку вместо API).
-      res.status(ok ? 200 : 502).json({
-        success: ok,
-        upstreamStatus: upstream.status,
-        upstreamContentType: upstream.headers.get("content-type"),
-        upstreamRawText: rawText.slice(0, 800)
-      });
-      return;
-    }
-    res.status(ok ? 200 : 502).json({ success: ok, upstream: data || null });
+    res.status(200).json({ success: true });
   } catch (err) {
-    console.error("Ошибка пересылки заявки на почту:", err);
-    res.status(502).json({ success: false, error: "upstream_failed", message: String(err && err.message || err) });
+    console.error("Ошибка отправки письма по SMTP:", err);
+    res.status(502).json({ success: false, error: "smtp_failed", message: String((err && err.message) || err) });
   }
 };

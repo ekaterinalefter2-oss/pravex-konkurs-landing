@@ -2,9 +2,10 @@
   "name": "pravex-konkurs-landing",
   "private": true,
   "version": "1.0.0",
-  "description": "Лендинг конкурса видеоотзывов ПРАВЭКС. Статический сайт + одна серверная функция (api/get-upload-url) для загрузки видео в VK Object Storage.",
+  "description": "Лендинг конкурса видеоотзывов ПРАВЭКС. Статический сайт + серверные функции: api/get-upload-url (загрузка видео в VK Object Storage) и api/submit-application (письмо с заявкой через SMTP VK WorkMail).",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",
-    "@aws-sdk/s3-request-presigner": "^3.600.0"
+    "@aws-sdk/s3-request-presigner": "^3.600.0",
+    "nodemailer": "^6.9.14"
   }
 }
