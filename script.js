@@ -707,7 +707,7 @@
         if (!res.ok) throw new Error("presign_failed");
         return res.json();
       })
-      .then(({ uploadUrl, viewUrl, objectKey }) => {
+      .then(({ uploadUrl, viewUrl, objectKey, applicationNumber }) => {
         const xhr = new XMLHttpRequest();
         currentUploadXhr = xhr;
         xhr.open("PUT", uploadUrl);
@@ -726,6 +726,9 @@
           if (xhr.status >= 200 && xhr.status < 300) {
             state.videoViewUrl = viewUrl;
             state.videoObjectKey = objectKey;
+            // Номер присваивается один раз: если человек заменит видео и получит новую
+            // ссылку на загрузку, номер заявки не должен поменяться на новый.
+            state.applicationNumber = state.applicationNumber || applicationNumber;
             saveState();
             onDone();
           } else {
@@ -765,10 +768,12 @@
   // ---------------------------------------------------------------------
   function renderChannelSelectionInit() { renderChannelSelection(); }
 
-  function generateApplicationNumber() {
-    let counter = Number(localStorage.getItem("pravexKonkursCounter") || "0") + 1;
-    localStorage.setItem("pravexKonkursCounter", String(counter));
-    return "К-" + String(counter).padStart(4, "0");
+  // Обычно номер уже присвоен сервером при загрузке видео (см. /api/get-upload-url).
+  // Этот генератор — только подстраховка на случай, если тот запрос почему-то
+  // не вернул номер: старый счётчик в localStorage удалён, потому что он считал
+  // независимо в каждом браузере и номера повторялись у разных участников.
+  function fallbackApplicationNumber() {
+    return "К-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 5).toUpperCase();
   }
 
   // Проверка отдельного шага "Согласия" (перед загрузкой видео)
@@ -815,7 +820,7 @@
     }
     errEl.hidden = true;
 
-    const appNumber = state.applicationNumber || generateApplicationNumber();
+    const appNumber = state.applicationNumber || fallbackApplicationNumber();
     state.applicationNumber = appNumber;
     state.utm = getUtmFromUrl();
 
@@ -894,7 +899,23 @@
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(fields)
     })
-      .then((res) => res.ok)
+      .then((res) =>
+        res.json()
+          .catch(() => null)
+          .then((data) => {
+            // FormSubmit отвечает HTTP 200 даже когда письмо НЕ ушло (например,
+            // форма ещё не подтверждена письмом "Activate Form" или превышен
+            // лимит бесплатного тарифа) — это видно только по полю success
+            // в самом теле ответа. Раньше здесь проверялся только res.ok,
+            // из-за этого сайт показывал участнику «заявка отправлена», а
+            // письмо организатору на самом деле не приходило.
+            if (!res.ok) return false;
+            if (data && typeof data.success !== "undefined") {
+              return data.success === true || data.success === "true";
+            }
+            return true;
+          })
+      )
       .catch((err) => {
         console.error("Ошибка отправки заявки:", err);
         return false;

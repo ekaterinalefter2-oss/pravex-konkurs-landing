@@ -53,6 +53,12 @@ module.exports = async (req, res) => {
   const rand = Math.random().toString(36).slice(2, 10);
   const objectKey = `konkurs/${today}/${Date.now()}-${rand}.${ext}`;
 
+  // Номер заявки формируется здесь же, на сервере, — чтобы не совпадал у разных
+  // участников (раньше номер считался в localStorage браузера и повторялся
+  // у людей, зашедших с разных устройств). Уникален за счёт времени с точностью
+  // до миллисекунды + короткого случайного хвоста.
+  const applicationNumber = "К-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 5).toUpperCase();
+
   const client = new S3Client({
     region: process.env.VK_S3_REGION,
     endpoint: process.env.VK_S3_ENDPOINT,
@@ -87,7 +93,7 @@ module.exports = async (req, res) => {
       { expiresIn: VIEW_URL_TTL_SEC }
     );
 
-    res.status(200).json({ uploadUrl, viewUrl, objectKey });
+    res.status(200).json({ uploadUrl, viewUrl, objectKey, applicationNumber });
   } catch (err) {
     console.error("Ошибка генерации ссылки на загрузку:", err);
     res.status(500).json({ error: "presign_failed" });
