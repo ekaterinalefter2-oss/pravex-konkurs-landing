@@ -707,6 +707,29 @@ a { color: var(--color-secondary); }
 .hints-box li { margin-bottom: 6px; }
 
 /* ---------- Загрузка видео ---------- */
+.record-now-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.record-now-btn svg { color: #ff5c5c; flex-shrink: 0; }
+
+.upload-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.upload-divider::before, .upload-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
 .dropzone {
   border: 2px dashed var(--color-secondary);
   border-radius: var(--radius-card);
@@ -784,6 +807,57 @@ a { color: var(--color-secondary); }
   font-size: 13px;
   margin-bottom: 16px;
 }
+
+/* ---------- Запись видео с камеры ---------- */
+.recorder-box { max-width: 420px; }
+
+.recorder-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  max-height: 60vh;
+  margin: 16px 0;
+  background: #111;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.recorder-frame video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.recorder-frame video.mirror { transform: scaleX(-1); }
+
+.recorder-timer {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.recorder-timer::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff5c5c;
+  animation: recorder-blink 1s infinite;
+}
+@keyframes recorder-blink { 50% { opacity: .2; } }
+
+.recorder-controls {
+  display: flex;
+  gap: 12px;
+}
+.recorder-controls .btn { flex: 1; }
 
 /* ---------- Форма контактов ---------- */
 .form-field { margin-bottom: 18px; }

@@ -199,7 +199,7 @@
         html: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
       }));
       details.appendChild(summary);
-      details.appendChild(el("div", { className: "faq-answer", text: item.a.replace("{results}", CONFIG.resultsDate) }));
+      details.appendChild(el("div", { className: "faq-answer", text: item.a.replace("{results}", CONFIG.resultsDate).replace("{votingDates}", CONFIG.votingDates) }));
       faqList.appendChild(details);
     });
 
@@ -647,8 +647,11 @@
     $("uploadError").hidden = true;
     $("uploadWarning").hidden = true;
 
-    const allowedTypes = ["video/mp4", "video/quicktime"];
-    const isAllowedExt = /\.(mp4|mov)$/i.test(file.name);
+    // MP4/MOV — то, что просим при обычной загрузке файла; webm сюда же добавлен
+    // ради видео, записанных прямо в браузере кнопкой «Снять видео сейчас» — на
+    // Android/Chrome браузер умеет записывать только в этом формате, не в MP4.
+    const allowedTypes = ["video/mp4", "video/quicktime", "video/webm"];
+    const isAllowedExt = /\.(mp4|mov|webm)$/i.test(file.name);
     if (!allowedTypes.includes(file.type) && !isAllowedExt) {
       showUploadError("Такой формат не подходит. Нужен MP4 или MOV");
       return;
@@ -778,6 +781,151 @@
         showUploadError("Не получилось начать загрузку. Проверьте интернет и попробуйте ещё раз");
       });
   }
+
+  // ---------------------------------------------------------------------
+  // Запись видео прямо с камеры устройства («Снять видео сейчас»)
+  // ---------------------------------------------------------------------
+  // Работает только там, где браузер поддерживает getUserMedia + MediaRecorder
+  // (современные Chrome/Safari на HTTPS). Там, где не поддерживается, кнопка
+  // просто не показывается — остаётся обычная загрузка готового файла.
+  const recorderSupported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  let recorderStream = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let recorderTimerInterval = null;
+  let recorderStartedAt = 0;
+
+  function initRecorderButton() {
+    if (!recorderSupported) return;
+    $("recordNowBtn").hidden = false;
+    $("uploadDivider").hidden = false;
+  }
+
+  function showRecorderState(state) {
+    $("recorderControlsStart").hidden = state !== "start";
+    $("recorderControlsStop").hidden = state !== "recording";
+    $("recorderControlsReview").hidden = state !== "review";
+  }
+
+  async function openRecorder() {
+    $("recorderError").hidden = true;
+    $("recorderTimer").hidden = true;
+    $("recorderOverlay").hidden = false;
+    showRecorderState("start");
+
+    const preview = $("recorderPreview");
+    preview.controls = false;
+    preview.muted = true;
+    preview.classList.add("mirror");
+
+    try {
+      recorderStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 1280 } },
+        audio: true
+      });
+      preview.srcObject = recorderStream;
+      preview.play().catch(() => {});
+    } catch (err) {
+      $("recorderError").textContent = "Не получилось получить доступ к камере и микрофону. Разрешите доступ во всплывающем окне браузера и попробуйте снова — либо загрузите готовое видео файлом ниже.";
+      $("recorderError").hidden = false;
+    }
+  }
+
+  function stopRecorderStream() {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      try { mediaRecorder.stop(); } catch (e) { /* noop */ }
+    }
+    if (recorderStream) {
+      recorderStream.getTracks().forEach((t) => t.stop());
+      recorderStream = null;
+    }
+    clearInterval(recorderTimerInterval);
+    recorderTimerInterval = null;
+  }
+
+  function closeRecorder() {
+    stopRecorderStream();
+    $("recorderOverlay").hidden = true;
+  }
+
+  function updateRecorderTimer() {
+    const sec = (Date.now() - recorderStartedAt) / 1000;
+    $("recorderTimer").textContent = formatDuration(sec);
+    if (sec >= CONFIG.uploadMaxDurationSec) {
+      mediaRecorder.stop();
+    }
+  }
+
+  $("recordNowBtn").addEventListener("click", openRecorder);
+  $("recorderClose").addEventListener("click", closeRecorder);
+  $("recorderOverlay").addEventListener("click", (e) => {
+    if (e.target === $("recorderOverlay")) closeRecorder();
+  });
+
+  $("recorderStartBtn").addEventListener("click", () => {
+    if (!recorderStream) return;
+    recordedChunks = [];
+
+    const preferredTypes = ["video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
+    const mimeType = preferredTypes.find((t) => window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || "";
+
+    try {
+      mediaRecorder = mimeType ? new MediaRecorder(recorderStream, { mimeType }) : new MediaRecorder(recorderStream);
+    } catch (e) {
+      mediaRecorder = new MediaRecorder(recorderStream);
+    }
+
+    mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = onRecordingStopped;
+    mediaRecorder.start();
+
+    recorderStartedAt = Date.now();
+    $("recorderTimer").hidden = false;
+    $("recorderTimer").textContent = "0:00";
+    recorderTimerInterval = setInterval(updateRecorderTimer, 200);
+    showRecorderState("recording");
+  });
+
+  $("recorderStopBtn").addEventListener("click", () => {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+  });
+
+  function onRecordingStopped() {
+    clearInterval(recorderTimerInterval);
+    recorderTimerInterval = null;
+    if (recorderStream) {
+      recorderStream.getTracks().forEach((t) => t.stop());
+      recorderStream = null;
+    }
+
+    const type = (mediaRecorder && mediaRecorder.mimeType) || "video/webm";
+    const blob = new Blob(recordedChunks, { type });
+    const ext = type.includes("mp4") ? "mp4" : "webm";
+
+    const preview = $("recorderPreview");
+    preview.classList.remove("mirror");
+    preview.srcObject = null;
+    preview.src = URL.createObjectURL(blob);
+    preview.muted = false;
+    preview.controls = true;
+    preview.play().catch(() => {});
+
+    $("recorderUseBtn").onclick = () => {
+      const file = new File([blob], "zapis-" + Date.now() + "." + ext, { type });
+      closeRecorder();
+      handleFileSelected(file);
+    };
+
+    showRecorderState("review");
+  }
+
+  $("recorderRetakeBtn").addEventListener("click", () => {
+    const preview = $("recorderPreview");
+    preview.pause();
+    preview.removeAttribute("src");
+    preview.controls = false;
+    openRecorder();
+  });
 
   // Обрыв связи во время загрузки — прерываем запрос и сообщаем об этом
   window.addEventListener("offline", () => {
@@ -980,6 +1128,7 @@
     renderQuizStatic();
     renderChannelSelectionInit();
     initCookieBanner();
+    initRecorderButton();
 
     // Автосохранение UTM из ссылки при заходе
     const utm = getUtmFromUrl();
