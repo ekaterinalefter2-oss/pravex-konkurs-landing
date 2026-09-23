@@ -809,181 +809,23 @@
   }
 
   // ---------------------------------------------------------------------
-  // Запись видео прямо с камеры устройства («Снять видео сейчас»)
+  // Съёмка видео прямо с камеры устройства («Снять видео сейчас»)
   // ---------------------------------------------------------------------
-  // Работает только там, где браузер поддерживает getUserMedia + MediaRecorder
-  // (современные Chrome/Safari на HTTPS). Там, где не поддерживается, кнопка
-  // просто не показывается — остаётся обычная загрузка готового файла.
-  const recorderSupported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
-  let recorderStream = null;
-  let mediaRecorder = null;
-  let recordedChunks = [];
-  let recorderTimerInterval = null;
-  let recorderStartedAt = 0;
-  // "user" — фронтальная камера (для селфи-формата, по умолчанию), "environment" — основная (тыловая)
-  let recorderFacingMode = "user";
-
+  // Никакого своего окна поверх сайта: кнопка открывает штатную камеру
+  // телефона через input[capture] — вертикальную съёмку, выбор фронтальной/
+  // основной камеры и разрешение на использование камеры даёт сама ОС.
+  // Выбранный ролик попадает в тот же пайплайн проверки и загрузки, что и
+  // обычный файл из медиатеки (handleFileSelected).
   function initRecorderButton() {
-    if (!recorderSupported) return;
     $("recordNowBtn").hidden = false;
     $("uploadDivider").hidden = false;
   }
 
-  function showRecorderState(state) {
-    $("recorderControlsIntro").hidden = state !== "intro";
-    $("recorderControlsStart").hidden = state !== "start";
-    $("recorderControlsStop").hidden = state !== "recording";
-    $("recorderControlsReview").hidden = state !== "review";
-    $("recorderFrame").hidden = state === "intro";
-    // Камеру переключаем только пока идёт живой предпросмотр — не во время записи и не в ревью
-    $("recorderSwitchCamBtn").hidden = state !== "start";
-  }
-
-  // Открывает оверлей на экране запроса доступа: камера ещё не включается —
-  // getUserMedia вызывается только после явного клика на «Разрешить доступ и начать»
-  function openRecorder() {
-    $("recorderError").hidden = true;
-    $("recorderTimer").hidden = true;
-    recorderFacingMode = "user";
-    $("recorderOverlay").hidden = false;
-    showRecorderState("intro");
-  }
-
-  // Видео всегда просим в вертикальном формате (по правилам конкурса — съёмка
-  // себя на телефон), независимо от того, какая камера выбрана
-  async function requestCameraAccess() {
-    $("recorderError").hidden = true;
-
-    const preview = $("recorderPreview");
-    preview.controls = false;
-    preview.muted = true;
-    preview.classList.toggle("mirror", recorderFacingMode === "user");
-
-    if (recorderStream) {
-      recorderStream.getTracks().forEach((t) => t.stop());
-      recorderStream = null;
-    }
-
-    try {
-      recorderStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: recorderFacingMode, width: { ideal: 720 }, height: { ideal: 1280 } },
-        audio: true
-      });
-      preview.srcObject = recorderStream;
-      preview.play().catch(() => {});
-      showRecorderState("start");
-    } catch (err) {
-      $("recorderError").textContent = "Не получилось получить доступ к камере и микрофону. Разрешите доступ во всплывающем окне браузера и попробуйте снова — либо загрузите готовое видео файлом ниже.";
-      $("recorderError").hidden = false;
-    }
-  }
-
-  // Переключение между фронтальной и основной камерой в живом предпросмотре
-  async function switchRecorderCamera() {
-    recorderFacingMode = recorderFacingMode === "user" ? "environment" : "user";
-    await requestCameraAccess();
-  }
-
-  $("recorderSwitchCamBtn").addEventListener("click", switchRecorderCamera);
-
-  function stopRecorderStream() {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      try { mediaRecorder.stop(); } catch (e) { /* noop */ }
-    }
-    if (recorderStream) {
-      recorderStream.getTracks().forEach((t) => t.stop());
-      recorderStream = null;
-    }
-    clearInterval(recorderTimerInterval);
-    recorderTimerInterval = null;
-  }
-
-  function closeRecorder() {
-    stopRecorderStream();
-    $("recorderOverlay").hidden = true;
-  }
-
-  function updateRecorderTimer() {
-    const sec = (Date.now() - recorderStartedAt) / 1000;
-    $("recorderTimer").textContent = formatDuration(sec);
-    if (sec >= CONFIG.uploadMaxDurationSec) {
-      mediaRecorder.stop();
-    }
-  }
-
-  $("recordNowBtn").addEventListener("click", openRecorder);
-  $("recorderClose").addEventListener("click", closeRecorder);
-  $("recorderBackFromIntroBtn").addEventListener("click", closeRecorder);
-  $("recorderBackFromStartBtn").addEventListener("click", closeRecorder);
-  $("recorderRequestBtn").addEventListener("click", requestCameraAccess);
-  $("recorderOverlay").addEventListener("click", (e) => {
-    if (e.target === $("recorderOverlay")) closeRecorder();
-  });
-
-  $("recorderStartBtn").addEventListener("click", () => {
-    if (!recorderStream) return;
-    recordedChunks = [];
-
-    const preferredTypes = ["video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
-    const mimeType = preferredTypes.find((t) => window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || "";
-
-    try {
-      mediaRecorder = mimeType ? new MediaRecorder(recorderStream, { mimeType }) : new MediaRecorder(recorderStream);
-    } catch (e) {
-      mediaRecorder = new MediaRecorder(recorderStream);
-    }
-
-    mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size) recordedChunks.push(e.data); };
-    mediaRecorder.onstop = onRecordingStopped;
-    mediaRecorder.start();
-
-    recorderStartedAt = Date.now();
-    $("recorderTimer").hidden = false;
-    $("recorderTimer").textContent = "0:00";
-    recorderTimerInterval = setInterval(updateRecorderTimer, 200);
-    showRecorderState("recording");
-  });
-
-  $("recorderStopBtn").addEventListener("click", () => {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
-  });
-
-  function onRecordingStopped() {
-    clearInterval(recorderTimerInterval);
-    recorderTimerInterval = null;
-    if (recorderStream) {
-      recorderStream.getTracks().forEach((t) => t.stop());
-      recorderStream = null;
-    }
-
-    const type = (mediaRecorder && mediaRecorder.mimeType) || "video/webm";
-    const blob = new Blob(recordedChunks, { type });
-    const ext = type.includes("mp4") ? "mp4" : "webm";
-
-    const preview = $("recorderPreview");
-    preview.classList.remove("mirror");
-    preview.srcObject = null;
-    preview.src = URL.createObjectURL(blob);
-    preview.muted = false;
-    preview.controls = true;
-    preview.play().catch(() => {});
-
-    $("recorderUseBtn").onclick = () => {
-      const file = new File([blob], "zapis-" + Date.now() + "." + ext, { type });
-      closeRecorder();
-      handleFileSelected(file);
-    };
-
-    showRecorderState("review");
-  }
-
-  $("recorderRetakeBtn").addEventListener("click", () => {
-    const preview = $("recorderPreview");
-    preview.pause();
-    preview.removeAttribute("src");
-    preview.controls = false;
-    // Доступ к камере уже был получен в этой сессии — заново спрашивать не нужно
-    requestCameraAccess();
+  const cameraCaptureInput = $("cameraCaptureInput");
+  $("recordNowBtn").addEventListener("click", () => cameraCaptureInput.click());
+  cameraCaptureInput.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) handleFileSelected(e.target.files[0]);
+    cameraCaptureInput.value = "";
   });
 
   // Обрыв связи во время загрузки — прерываем запрос и сообщаем об этом

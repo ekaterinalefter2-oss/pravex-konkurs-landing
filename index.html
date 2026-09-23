@@ -199,6 +199,8 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>
               Снять видео сейчас
             </button>
+            <!-- Открывает штатную камеру телефона напрямую (атрибут capture) — без своего окна поверх сайта -->
+            <input type="file" id="cameraCaptureInput" accept="video/*" capture="user" class="sr-only" />
             <div class="upload-divider" id="uploadDivider" hidden><span>или загрузите готовый файл</span></div>
 
             <div class="dropzone" id="dropzone">
@@ -287,53 +289,6 @@
     </section>
 
   </main>
-
-  <!-- Оверлей записи видео прямо с камеры устройства -->
-  <div class="modal-overlay" id="recorderOverlay" hidden>
-    <div class="modal-box recorder-box">
-      <button class="modal-close" id="recorderClose" aria-label="Закрыть">✕</button>
-      <h2>Снять видео</h2>
-
-      <div class="recorder-frame" id="recorderFrame" hidden>
-        <video id="recorderPreview" autoplay muted playsinline></video>
-        <div class="recorder-timer" id="recorderTimer" hidden>0:00</div>
-        <button class="recorder-switch-cam" id="recorderSwitchCamBtn" type="button" aria-label="Сменить камеру" hidden>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-            <path d="M9 12a3 3 0 106 0 3 3 0 00-6 0z" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M14.5 4.5l1.5 1.5-1.5 1.5M9.5 19.5L8 18l1.5-1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-      </div>
-
-      <div class="field-error" id="recorderError" hidden></div>
-
-      <!-- Экран запроса доступа: камера не включается, пока человек сам не нажмёт кнопку -->
-      <div class="recorder-permission" id="recorderControlsIntro">
-        <svg class="recorder-permission-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M15 8l4.5-2.5v13L15 16" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-          <rect x="3" y="6" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-        <p class="quiz-note">Держите телефон вертикально. Понадобится доступ к камере и микрофону — браузер спросит разрешение после нажатия кнопки ниже</p>
-        <div class="recorder-controls">
-          <button class="btn btn-secondary" id="recorderBackFromIntroBtn" type="button">Назад</button>
-          <button class="btn btn-primary" id="recorderRequestBtn" type="button">Разрешить доступ и начать</button>
-        </div>
-      </div>
-
-      <div class="recorder-controls" id="recorderControlsStart" hidden>
-        <button class="btn btn-secondary" id="recorderBackFromStartBtn" type="button">Назад</button>
-        <button class="btn btn-primary" id="recorderStartBtn" type="button">Начать запись</button>
-      </div>
-      <div class="recorder-controls" id="recorderControlsStop" hidden>
-        <button class="btn btn-secondary btn-block" id="recorderStopBtn" type="button">Остановить запись</button>
-      </div>
-      <div class="recorder-controls" id="recorderControlsReview" hidden>
-        <button class="btn btn-secondary" id="recorderRetakeBtn" type="button">Переснять</button>
-        <button class="btn btn-primary" id="recorderUseBtn" type="button">Использовать это видео</button>
-      </div>
-    </div>
-  </div>
 
   <footer class="site-footer">
     <div class="container">
