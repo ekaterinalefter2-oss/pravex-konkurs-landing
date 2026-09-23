@@ -275,6 +275,7 @@
             </svg>
             <h2 id="finalTitle"></h2>
             <p id="finalText"></p>
+            <div class="final-fio" id="finalFio" hidden></div>
             <div class="application-number" id="applicationNumber"></div>
             <div>
               <button class="btn btn-primary" id="shareBtn">Поделиться конкурсом</button>
@@ -292,17 +293,30 @@
     <div class="modal-box recorder-box">
       <button class="modal-close" id="recorderClose" aria-label="Закрыть">✕</button>
       <h2>Снять видео</h2>
-      <p class="quiz-note">Держите телефон вертикально. Разрешите доступ к камере и микрофону, когда браузер спросит</p>
 
-      <div class="recorder-frame">
+      <div class="recorder-frame" id="recorderFrame" hidden>
         <video id="recorderPreview" autoplay muted playsinline></video>
         <div class="recorder-timer" id="recorderTimer" hidden>0:00</div>
       </div>
 
       <div class="field-error" id="recorderError" hidden></div>
 
-      <div class="recorder-controls" id="recorderControlsStart">
-        <button class="btn btn-primary btn-block" id="recorderStartBtn" type="button">Начать запись</button>
+      <!-- Экран запроса доступа: камера не включается, пока человек сам не нажмёт кнопку -->
+      <div class="recorder-permission" id="recorderControlsIntro">
+        <svg class="recorder-permission-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15 8l4.5-2.5v13L15 16" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <rect x="3" y="6" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <p class="quiz-note">Держите телефон вертикально. Понадобится доступ к камере и микрофону — браузер спросит разрешение после нажатия кнопки ниже</p>
+        <div class="recorder-controls">
+          <button class="btn btn-secondary" id="recorderBackFromIntroBtn" type="button">Назад</button>
+          <button class="btn btn-primary" id="recorderRequestBtn" type="button">Разрешить доступ и начать</button>
+        </div>
+      </div>
+
+      <div class="recorder-controls" id="recorderControlsStart" hidden>
+        <button class="btn btn-secondary" id="recorderBackFromStartBtn" type="button">Назад</button>
+        <button class="btn btn-primary" id="recorderStartBtn" type="button">Начать запись</button>
       </div>
       <div class="recorder-controls" id="recorderControlsStop" hidden>
         <button class="btn btn-secondary btn-block" id="recorderStopBtn" type="button">Остановить запись</button>

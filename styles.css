@@ -374,6 +374,13 @@ a { color: var(--color-secondary); }
   color: var(--color-primary);
 }
 
+/* Плашка с призом — выделена акцентным цветом среди остальных бейджей */
+.hero-badge.hero-badge-accent {
+  background: var(--color-accent-gold);
+}
+.hero-badge.hero-badge-accent .badge-label { color: rgba(255, 255, 255, .85); }
+.hero-badge.hero-badge-accent .badge-value { color: #fff; }
+
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
@@ -655,6 +662,18 @@ a { color: var(--color-secondary); }
 
 .quiz-nav .spacer { flex: 1; }
 
+/* На узких экранах кнопки (особенно когда их 3, как на шаге "Как снять")
+   не помещаются в одну строку и вылезают за карточку — на мобильных
+   складываем их в столбец на всю ширину, основная кнопка сверху */
+@media (max-width: 480px) {
+  .quiz-nav {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .quiz-nav .spacer { display: none; }
+  .quiz-nav .btn { width: 100%; }
+}
+
 /* Блок правил съёмки / запретов */
 .rules-list {
   margin: 0 0 20px;
@@ -859,6 +878,25 @@ a { color: var(--color-secondary); }
 }
 .recorder-controls .btn { flex: 1; }
 
+/* Экран запроса доступа к камере — показывается до вызова getUserMedia */
+.recorder-permission {
+  text-align: center;
+  padding: 12px 0 4px;
+}
+.recorder-permission-icon {
+  color: var(--color-secondary);
+  margin: 4px auto 12px;
+}
+.recorder-permission .quiz-note { margin-bottom: 20px; }
+.recorder-permission .recorder-controls { text-align: left; }
+
+@media (max-width: 480px) {
+  .recorder-box { padding: 18px; }
+  .recorder-frame { max-height: 48vh; margin: 12px 0; }
+  .recorder-controls { flex-direction: column; }
+  .recorder-controls .btn { width: 100%; }
+}
+
 /* ---------- Форма контактов ---------- */
 .form-field { margin-bottom: 18px; }
 
@@ -954,6 +992,18 @@ a { color: var(--color-secondary); }
   font-family: inherit;
 }
 
+.consent-row-select-all {
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 6px;
+  padding-bottom: 14px;
+}
+
+.consent-select-all-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
 .consent-note {
   font-size: 13px;
   color: var(--color-text-muted);
@@ -983,6 +1033,13 @@ a { color: var(--color-secondary); }
   font-size: 16px;
   color: var(--color-text);
   margin: 0 0 24px;
+}
+
+.final-fio {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 10px;
 }
 
 .application-number {

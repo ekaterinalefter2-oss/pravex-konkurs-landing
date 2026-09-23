@@ -138,7 +138,7 @@
     const badgesWrap = $("heroBadges");
     badgesWrap.innerHTML = "";
     CONFIG.heroBadges.forEach((b) => {
-      const badge = el("div", { className: "hero-badge" });
+      const badge = el("div", { className: "hero-badge" + (b.accent ? " hero-badge-accent" : "") });
       badge.appendChild(el("span", { className: "badge-label", text: b.label }));
       badge.appendChild(el("span", { className: "badge-value", text: b.value }));
       badgesWrap.appendChild(badge);
@@ -432,25 +432,60 @@
     });
   }
 
+  // Под капотом по-прежнему пять отдельных флагов (нужны для валидации и письма),
+  // но в интерфейсе они объединены в 2 галочки: «Правила» и «Все остальные согласия».
+  // Групповая галочка pdn/pdnDistribution/image/license всегда выставляется одним
+  // значением сразу для всех четырёх флагов.
+  const COMBINED_CONSENT_KEYS = ["pdn", "pdnDistribution", "image", "license"];
+
+  function isCombinedChecked() {
+    return COMBINED_CONSENT_KEYS.every((key) => state.consents[key]);
+  }
+
+  function setCombinedConsent(val) {
+    COMBINED_CONSENT_KEYS.forEach((key) => { state.consents[key] = val; });
+  }
+
   function renderConsentsBlock() {
     const wrap = $("consentsWrap");
     wrap.innerHTML = "";
     const c = CONFIG.consents;
 
-    // У каждого согласия — реальная ссылка на документ под словами «Полный текст»;
-    // у четырёх основных согласий это один общий документ (consentsDocUrl),
-    // у согласия с правилами — отдельный документ правил конкурса (rulesUrl).
-    const consent = (key, text, docUrl) => wrap.appendChild(buildConsentRow(
-      "consent_" + key, text, state.consents[key],
-      (val) => { state.consents[key] = val; saveState(); },
-      docUrl
-    ));
+    const selectAllRow = el("div", { className: "consent-row consent-row-select-all" });
+    const selectAllCb = el("input", { attrs: { type: "checkbox", id: "consent_select_all" } });
+    const selectAllLabel = el("label", { className: "consent-select-all-label", attrs: { for: "consent_select_all" }, text: CONFIG.consentsSelectAllLabel });
+    selectAllRow.appendChild(selectAllCb);
+    selectAllRow.appendChild(selectAllLabel);
+    wrap.appendChild(selectAllRow);
 
-    consent("rules", c.rules, CONFIG.rulesUrl);
-    consent("pdn", c.pdn, CONFIG.consentsDocUrl);
-    consent("pdnDistribution", c.pdnDistribution, CONFIG.consentsDocUrl);
-    consent("image", c.image, CONFIG.consentsDocUrl);
-    consent("license", c.license, CONFIG.consentsDocUrl);
+    const rulesRow = buildConsentRow("consent_rules", c.rules, state.consents.rules, (val) => {
+      state.consents.rules = val;
+      saveState();
+      updateSelectAll();
+    }, CONFIG.rulesUrl);
+    wrap.appendChild(rulesRow);
+
+    const combinedRow = buildConsentRow("consent_combined", c.combined, isCombinedChecked(), (val) => {
+      setCombinedConsent(val);
+      saveState();
+      updateSelectAll();
+    }, CONFIG.consentsDocUrl);
+    wrap.appendChild(combinedRow);
+
+    function updateSelectAll() {
+      selectAllCb.checked = state.consents.rules && isCombinedChecked();
+    }
+
+    selectAllCb.addEventListener("change", (e) => {
+      const val = e.target.checked;
+      state.consents.rules = val;
+      setCombinedConsent(val);
+      saveState();
+      rulesRow.querySelector('input[type="checkbox"]').checked = val;
+      combinedRow.querySelector('input[type="checkbox"]').checked = val;
+    });
+
+    updateSelectAll();
   }
 
   function buildConsentRow(id, labelText, checked, onChange, docUrl) {
@@ -793,16 +828,24 @@
   }
 
   function showRecorderState(state) {
+    $("recorderControlsIntro").hidden = state !== "intro";
     $("recorderControlsStart").hidden = state !== "start";
     $("recorderControlsStop").hidden = state !== "recording";
     $("recorderControlsReview").hidden = state !== "review";
+    $("recorderFrame").hidden = state === "intro";
   }
 
-  async function openRecorder() {
+  // Открывает оверлей на экране запроса доступа: камера ещё не включается —
+  // getUserMedia вызывается только после явного клика на «Разрешить доступ и начать»
+  function openRecorder() {
     $("recorderError").hidden = true;
     $("recorderTimer").hidden = true;
     $("recorderOverlay").hidden = false;
-    showRecorderState("start");
+    showRecorderState("intro");
+  }
+
+  async function requestCameraAccess() {
+    $("recorderError").hidden = true;
 
     const preview = $("recorderPreview");
     preview.controls = false;
@@ -816,6 +859,7 @@
       });
       preview.srcObject = recorderStream;
       preview.play().catch(() => {});
+      showRecorderState("start");
     } catch (err) {
       $("recorderError").textContent = "Не получилось получить доступ к камере и микрофону. Разрешите доступ во всплывающем окне браузера и попробуйте снова — либо загрузите готовое видео файлом ниже.";
       $("recorderError").hidden = false;
@@ -849,6 +893,9 @@
 
   $("recordNowBtn").addEventListener("click", openRecorder);
   $("recorderClose").addEventListener("click", closeRecorder);
+  $("recorderBackFromIntroBtn").addEventListener("click", closeRecorder);
+  $("recorderBackFromStartBtn").addEventListener("click", closeRecorder);
+  $("recorderRequestBtn").addEventListener("click", requestCameraAccess);
   $("recorderOverlay").addEventListener("click", (e) => {
     if (e.target === $("recorderOverlay")) closeRecorder();
   });
@@ -915,7 +962,8 @@
     preview.pause();
     preview.removeAttribute("src");
     preview.controls = false;
-    openRecorder();
+    // Доступ к камере уже был получен в этой сессии — заново спрашивать не нужно
+    requestCameraAccess();
   });
 
   // Обрыв связи во время загрузки — прерываем запрос и сообщаем об этом
@@ -1009,6 +1057,10 @@
 
     saveState();
     $("applicationNumber").textContent = appNumber;
+    if (state.contacts.name) {
+      $("finalFio").textContent = (CONFIG.finalFioLabel ? CONFIG.finalFioLabel + ": " : "") + state.contacts.name;
+      $("finalFio").hidden = false;
+    }
     $("finalText").textContent = CONFIG.finalText.replace("{results}", CONFIG.resultsDate);
     showQuizStep("final");
     metrikaGoal("konkurs_submit");
