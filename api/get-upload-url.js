@@ -45,19 +45,30 @@ module.exports = async (req, res) => {
 
   const filenameRaw = typeof body.filename === "string" ? body.filename : "video.mp4";
   const contentType = typeof body.contentType === "string" && body.contentType ? body.contentType : "video/mp4";
+  const fioRaw = typeof body.fio === "string" ? body.fio.trim() : "";
 
   const extMatch = filenameRaw.match(/\.([a-zA-Z0-9]+)$/);
   const ext = ((extMatch && extMatch[1]) || "mp4").toLowerCase().replace(/[^a-z0-9]/g, "") || "mp4";
 
   const today = new Date().toISOString().slice(0, 10);
-  const rand = Math.random().toString(36).slice(2, 10);
-  const objectKey = `konkurs/${today}/${Date.now()}-${rand}.${ext}`;
 
   // Номер заявки формируется здесь же, на сервере, — чтобы не совпадал у разных
   // участников (раньше номер считался в localStorage браузера и повторялся
   // у людей, зашедших с разных устройств). Уникален за счёт времени с точностью
   // до миллисекунды + короткого случайного хвоста.
-  const applicationNumber = "К-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 5).toUpperCase();
+  // Если сайт уже выдавал номер этому человеку раньше в этой же вкладке (например,
+  // он заменяет видео на другое) — переиспользуем тот же номер, а не генерируем новый.
+  const existingApplicationNumber = typeof body.applicationNumber === "string" ? body.applicationNumber.trim() : "";
+  const applicationNumber = existingApplicationNumber
+    || ("К-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 5).toUpperCase());
+
+  // ФИО и номер заявки вплетаем прямо в путь файла в хранилище — так в консоли
+  // VK Cloud сразу видно, чьё это видео, без сверки с письмом на почту.
+  const safeFio = fioRaw
+    .replace(/[\\/:*?"<>|]+/g, "")
+    .replace(/\s+/g, "_")
+    .slice(0, 60) || "uchastnik";
+  const objectKey = `konkurs/${today}/${applicationNumber}_${safeFio}.${ext}`;
 
   const client = new S3Client({
     region: process.env.VK_S3_REGION,

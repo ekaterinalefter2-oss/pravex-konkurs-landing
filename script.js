@@ -129,6 +129,8 @@
     $("logoLink").href = CONFIG.siteUrl;
     $("headerBadge").textContent = CONFIG.headerBadge;
     $("headerBadge").hidden = !CONFIG.headerBadge;
+    $("heroKicker").textContent = CONFIG.heroKicker;
+    $("heroKicker").hidden = !CONFIG.heroKicker;
     $("startBtn").textContent = CONFIG.heroCtaLabel;
     $("startBtn2").textContent = CONFIG.heroCtaLabel;
     $("rulesLinkBtn").textContent = CONFIG.heroRulesLabel;
@@ -142,14 +144,18 @@
       badgesWrap.appendChild(badge);
     });
 
-    const disclaimer = CONFIG.adDisclaimerTemplate
+    const disclaimerBase = CONFIG.adDisclaimerTemplate
       .replace("{start}", formatDateRu(CONFIG.contestStartDate))
       .replace("{end}", formatDateRu(CONFIG.contestEndDate))
       .replace("{deadline}", formatDateTimeRu(CONFIG.submissionDeadline))
       .replace("{organizer}", CONFIG.organizerName)
       .replace("{prizes}", CONFIG.prizesDisclaimerText)
-      .replace("{rulesLink}", CONFIG.rulesUrl);
-    $("adDisclaimer").textContent = disclaimer.replace(/\.\.(?!\.)/g, "."); // "г.." после даты → "г."
+      .replace(/\.\.(?!\.)/g, "."); // "г.." после даты → "г."
+    const footerDisclaimer = $("footerDisclaimer");
+    footerDisclaimer.textContent = "";
+    footerDisclaimer.appendChild(document.createTextNode(disclaimerBase + " "));
+    const rulesInlineLink = el("a", { text: CONFIG.adDisclaimerLinkLabel, attrs: { href: CONFIG.rulesUrl, target: "_blank", rel: "noopener" } });
+    footerDisclaimer.appendChild(rulesInlineLink);
 
     initHeroSlider();
 
@@ -159,10 +165,14 @@
     const nominationsGrid = $("nominationsGrid");
     nominationsGrid.innerHTML = "";
     CONFIG.topics.filter((t) => t.desc).forEach((t, i) => {
-      const card = el("div", { className: "nomination-card" });
+      const card = el("div", { className: "nomination-card", attrs: { role: "button", tabindex: "0" } });
       card.appendChild(el("span", { className: "nomination-tag", text: "Номинация " + (i + 1) }));
       card.appendChild(el("h3", { text: t.label }));
       card.appendChild(el("p", { text: t.desc }));
+      card.addEventListener("click", () => startQuizWithTopic(t.id));
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); startQuizWithTopic(t.id); }
+      });
       nominationsGrid.appendChild(card);
     });
 
@@ -503,6 +513,17 @@
   $("startBtn").addEventListener("click", startQuiz);
   $("startBtn2").addEventListener("click", startQuiz);
 
+  // Клик по карточке номинации на главной — сразу выбирает её темой истории
+  // и переносит к началу анкеты (шаг 1 всё равно нужно пройти, а на шаге
+  // "Номинация" эта карточка уже будет выбрана — останется нажать «Далее»).
+  function startQuizWithTopic(topicId) {
+    state.topic = topicId;
+    saveState();
+    refreshOptionSelection("q2Options", (idx) => CONFIG.topics[idx].id === topicId);
+    $("q2NextBtn").disabled = false;
+    startQuiz();
+  }
+
   document.querySelectorAll('[data-nav="back"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const idx = STEP_ORDER.indexOf(currentStep);
@@ -649,12 +670,12 @@
       const height = probe.videoHeight;
 
       if (duration < CONFIG.uploadMinDurationSec) {
-        showUploadError("Ролик короче 1 минуты. Расскажите чуть подробнее");
+        showUploadError("Ролик короче 30 секунд. Расскажите чуть подробнее");
         URL.revokeObjectURL(objectUrl);
         return;
       }
       if (duration > CONFIG.uploadMaxDurationSec) {
-        showUploadError("Ролик длиннее 3 минут. Нужно уложиться в три");
+        showUploadError("Ролик длиннее 2 минут. Нужно уложиться в два");
         URL.revokeObjectURL(objectUrl);
         return;
       }
@@ -701,7 +722,14 @@
     fetch("/api/get-upload-url", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.name, contentType })
+      body: JSON.stringify({
+        filename: file.name,
+        contentType,
+        fio: state.contacts.name || "",
+        // Если номер уже выдавался раньше (например, человек заменяет видео) — передаём
+        // тот же самый, чтобы файл в хранилище не задваивался под новым именем
+        applicationNumber: state.applicationNumber || ""
+      })
     })
       .then((res) => {
         if (!res.ok) throw new Error("presign_failed");

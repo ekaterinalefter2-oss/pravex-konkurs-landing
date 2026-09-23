@@ -314,6 +314,19 @@ a { color: var(--color-secondary); }
   .hero-media { order: 0; }
 }
 
+.hero-kicker {
+  display: inline-block;
+  background: var(--color-accent-gold);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  border-radius: 999px;
+  padding: 6px 16px;
+  margin: 0 0 14px;
+}
+
 .hero-title {
   font-size: 28px;
   line-height: 1.15;
@@ -369,12 +382,6 @@ a { color: var(--color-secondary); }
   margin-bottom: 20px;
 }
 
-.ad-disclaimer {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  max-width: 640px;
-  overflow-wrap: anywhere; /* длинная ссылка на правила не должна раздвигать колонку на мобильных */
-}
 
 /* ---------- "Как участвовать" ---------- */
 .section {
@@ -412,7 +419,16 @@ a { color: var(--color-secondary); }
   border: 2px solid var(--color-border);
   border-radius: var(--radius-card);
   padding: 22px 20px;
+  cursor: pointer;
+  transition: border-color .15s ease, transform .1s ease;
+  text-align: left;
 }
+.nomination-card:hover,
+.nomination-card:focus-visible {
+  border-color: var(--color-secondary);
+  outline: none;
+}
+.nomination-card:active { transform: scale(0.99); }
 
 .nomination-tag {
   display: inline-block;
@@ -981,6 +997,15 @@ a { color: var(--color-secondary); }
 }
 
 .footer-links a { color: var(--color-primary); text-decoration: none; font-weight: 600; }
+
+.footer-disclaimer {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  max-width: 720px;
+  margin: 4px 0 16px;
+  overflow-wrap: anywhere; /* длинная ссылка/слово не должны раздвигать подвал на мобильных */
+}
+.footer-disclaimer a { color: var(--color-primary); font-weight: 600; }
 
 .cookie-banner {
   position: fixed;
