@@ -848,6 +848,22 @@ a { color: var(--color-secondary); }
 }
 .recorder-frame video.mirror { transform: scaleX(-1); }
 
+.recorder-switch-cam {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
 .recorder-timer {
   position: absolute;
   top: 12px;
@@ -1082,6 +1098,16 @@ a { color: var(--color-secondary); }
 
 @media (min-width: 640px) {
   .modal-box { border-radius: var(--radius-card); }
+}
+
+/* Окно записи видео — всегда по центру экрана (не шторкой снизу), даже на мобильных */
+#recorderOverlay {
+  align-items: center;
+  padding: 16px;
+}
+#recorderOverlay .recorder-box {
+  border-radius: var(--radius-card);
+  max-height: 92vh;
 }
 
 .modal-close {

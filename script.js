@@ -820,6 +820,8 @@
   let recordedChunks = [];
   let recorderTimerInterval = null;
   let recorderStartedAt = 0;
+  // "user" — фронтальная камера (для селфи-формата, по умолчанию), "environment" — основная (тыловая)
+  let recorderFacingMode = "user";
 
   function initRecorderButton() {
     if (!recorderSupported) return;
@@ -833,6 +835,8 @@
     $("recorderControlsStop").hidden = state !== "recording";
     $("recorderControlsReview").hidden = state !== "review";
     $("recorderFrame").hidden = state === "intro";
+    // Камеру переключаем только пока идёт живой предпросмотр — не во время записи и не в ревью
+    $("recorderSwitchCamBtn").hidden = state !== "start";
   }
 
   // Открывает оверлей на экране запроса доступа: камера ещё не включается —
@@ -840,21 +844,29 @@
   function openRecorder() {
     $("recorderError").hidden = true;
     $("recorderTimer").hidden = true;
+    recorderFacingMode = "user";
     $("recorderOverlay").hidden = false;
     showRecorderState("intro");
   }
 
+  // Видео всегда просим в вертикальном формате (по правилам конкурса — съёмка
+  // себя на телефон), независимо от того, какая камера выбрана
   async function requestCameraAccess() {
     $("recorderError").hidden = true;
 
     const preview = $("recorderPreview");
     preview.controls = false;
     preview.muted = true;
-    preview.classList.add("mirror");
+    preview.classList.toggle("mirror", recorderFacingMode === "user");
+
+    if (recorderStream) {
+      recorderStream.getTracks().forEach((t) => t.stop());
+      recorderStream = null;
+    }
 
     try {
       recorderStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 1280 } },
+        video: { facingMode: recorderFacingMode, width: { ideal: 720 }, height: { ideal: 1280 } },
         audio: true
       });
       preview.srcObject = recorderStream;
@@ -865,6 +877,14 @@
       $("recorderError").hidden = false;
     }
   }
+
+  // Переключение между фронтальной и основной камерой в живом предпросмотре
+  async function switchRecorderCamera() {
+    recorderFacingMode = recorderFacingMode === "user" ? "environment" : "user";
+    await requestCameraAccess();
+  }
+
+  $("recorderSwitchCamBtn").addEventListener("click", switchRecorderCamera);
 
   function stopRecorderStream() {
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
