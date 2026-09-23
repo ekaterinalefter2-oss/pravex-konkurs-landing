@@ -316,7 +316,7 @@ a { color: var(--color-secondary); }
 
 .hero-kicker {
   display: inline-block;
-  background: var(--color-accent-gold);
+  background: var(--color-secondary);
   color: #fff;
   font-size: 13px;
   font-weight: 800;
@@ -376,7 +376,7 @@ a { color: var(--color-secondary); }
 
 /* Плашка с призом — выделена акцентным цветом среди остальных бейджей */
 .hero-badge.hero-badge-accent {
-  background: var(--color-accent-gold);
+  background: var(--color-secondary);
 }
 .hero-badge.hero-badge-accent .badge-label { color: rgba(255, 255, 255, .85); }
 .hero-badge.hero-badge-accent .badge-value { color: #fff; }
