@@ -14,8 +14,9 @@ const CONFIG = {
   organizerPhoneHref: "tel:88005115725",
   organizerName: "ИП Качкаева Анастасия Низамитдиновна",     // для строки по ст.9 ФЗ "О рекламе" и подвала
   organizerRequisites: "Адрес: 426068, Удмуртская Республика, г. Ижевск, улица имени Сабурова А.Н., д. 17, кв. 561\nИНН: 745110599126\nОГРНИП: 322200000003421", // для подвала
-  rulesUrl: "https://drive.google.com/drive/folders/1al7atSr5OqY8Ts7i9uafpWhSTJj80H7m?usp=sharing",                               // ссылка на полные правила конкурса
-  privacyUrl: "#privacy",                             // ссылка на политику обработки ПДн
+  rulesUrl: "https://drive.google.com/file/d/1SrFT46Ieg1dD0PWZ99IAC_ZZvXrDwF77/view?usp=sharing", // документ с правилами конкурса
+  privacyUrl: "https://drive.google.com/file/d/1BYnA2FEMc-WRlLIhwtKb7DurX6Yz1xKh/view?usp=sharing", // документ политики обработки ПДн
+  consentsDocUrl: "https://drive.google.com/file/d/1OU4SoPOT4f4B4zpu6ZrVhcdnJVNeceKH/view?usp=sharing", // все 4 согласия одним документом
   headerBadge: "Конкурс",                              // лиловая плашка справа от логотипа в шапке
   siteUrl: "https://pravex.ru",                       // куда ведёт клик по логотипу
   heroKicker: "Конкурс видеоотзывов!",                // яркая плашка над заголовком стартового экрана

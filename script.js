@@ -212,7 +212,11 @@
     $("footerRules").target = "_blank";
     $("footerRules").rel = "noopener";
     $("footerPrivacy").href = CONFIG.privacyUrl;
+    $("footerPrivacy").target = "_blank";
+    $("footerPrivacy").rel = "noopener";
     $("cookiePrivacyLink").href = CONFIG.privacyUrl;
+    $("cookiePrivacyLink").target = "_blank";
+    $("cookiePrivacyLink").rel = "noopener";
 
     // Демо-баннер
     $("demoBanner").hidden = !!CONFIG.emailDeliveryConfigured;
@@ -433,47 +437,34 @@
     wrap.innerHTML = "";
     const c = CONFIG.consents;
 
-    const consent = (key, text, modalTitle, modalBody) => wrap.appendChild(buildConsentRow(
+    // У каждого согласия — реальная ссылка на документ под словами «Полный текст»;
+    // у четырёх основных согласий это один общий документ (consentsDocUrl),
+    // у согласия с правилами — отдельный документ правил конкурса (rulesUrl).
+    const consent = (key, text, docUrl) => wrap.appendChild(buildConsentRow(
       "consent_" + key, text, state.consents[key],
       (val) => { state.consents[key] = val; saveState(); },
-      () => openRulesModal(modalTitle, modalBody)
+      docUrl
     ));
 
-    // 0 — правила конкурса
-    wrap.appendChild(buildConsentRow("consent_rules", c.rules, state.consents.rules,
-      (val) => { state.consents.rules = val; saveState(); },
-      () => window.open(CONFIG.rulesUrl, "_blank", "noopener")));
-
-    // 1 — обработка ПДн
-    consent("pdn", c.pdn, "Согласие на обработку персональных данных", "Здесь размещается полный текст согласия на обработку персональных данных (152-ФЗ, п. 10.1.1 правил).");
-
-    // 2 — ПДн, разрешённые для распространения, с выбором формата
-    consent("pdnDistribution", c.pdnDistribution, "Согласие на обработку персональных данных, разрешённых для распространения", "Здесь размещается полный текст отдельного согласия на обработку персональных данных, разрешённых субъектом для распространения (ст. 10.1 152-ФЗ).");
-    // 3 — использование изображения
-    consent("image", c.image, "Согласие на использование изображения", "Здесь размещается полный текст согласия на обнародование и использование изображения (ст. 152.1 ГК РФ, п. 10.1.3 правил).");
-
-    // 4 — права ПРАВЭКС на видео, голос и текст отзыва
-    consent("license", c.license, "Документ о правах на использование отзыва", "Здесь размещается полный текст документа о правах ПРАВЭКС на использование видео, голоса и текста отзыва, включая монтаж и рекламное использование (раздел 11 правил).");
+    consent("rules", c.rules, CONFIG.rulesUrl);
+    consent("pdn", c.pdn, CONFIG.consentsDocUrl);
+    consent("pdnDistribution", c.pdnDistribution, CONFIG.consentsDocUrl);
+    consent("image", c.image, CONFIG.consentsDocUrl);
+    consent("license", c.license, CONFIG.consentsDocUrl);
   }
 
-  function buildConsentRow(id, labelText, checked, onChange, onOpenFull) {
+  function buildConsentRow(id, labelText, checked, onChange, docUrl) {
     const row = el("div", { className: "consent-row" });
     const cb = el("input", { attrs: { type: "checkbox", id: id } });
     cb.checked = !!checked;
     cb.addEventListener("change", (e) => onChange(e.target.checked));
     const label = el("label", { attrs: { for: id } });
     label.appendChild(document.createTextNode(labelText + " — "));
-    const link = el("button", { className: "link-btn", text: "Полный текст", attrs: { type: "button" } });
-    link.addEventListener("click", (e) => { e.preventDefault(); onOpenFull(); });
+    const link = el("a", { className: "link-btn", text: "Полный текст", attrs: { href: docUrl, target: "_blank", rel: "noopener" } });
     label.appendChild(link);
     row.appendChild(cb);
     row.appendChild(label);
     return row;
-  }
-
-  function openRulesModal(title, bodyText) {
-    $("modalContent").innerHTML = `<h2>${title}</h2><p>${bodyText}</p><p style="color:var(--color-text-muted); font-size:13px;">Версия текста: ${CONFIG.consents.version}</p>`;
-    $("modalOverlay").hidden = false;
   }
 
   // ---------------------------------------------------------------------
@@ -1098,15 +1089,10 @@
   });
 
   // ---------------------------------------------------------------------
-  // Модалка правил / cookie-баннер / прочее
+  // Cookie-баннер / прочее
   // ---------------------------------------------------------------------
   $("rulesLinkBtn").addEventListener("click", () => {
     window.open(CONFIG.rulesUrl, "_blank", "noopener");
-  });
-
-  $("modalClose").addEventListener("click", () => { $("modalOverlay").hidden = true; });
-  $("modalOverlay").addEventListener("click", (e) => {
-    if (e.target === $("modalOverlay")) $("modalOverlay").hidden = true;
   });
 
   function initCookieBanner() {
