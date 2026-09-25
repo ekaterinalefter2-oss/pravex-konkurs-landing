@@ -3,6 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "description": "Лендинг конкурса видеоотзывов ПРАВЭКС. Статический сайт + серверные функции: api/get-upload-url (загрузка видео в VK Object Storage) и api/submit-application (письмо с заявкой через SMTP VK WorkMail).",
+  "scripts": {
+    "start": "node node-server.js"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",
     "@aws-sdk/s3-request-presigner": "^3.600.0",
